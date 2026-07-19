@@ -1,0 +1,45 @@
+{
+  "version": "1",
+  "sources": {
+    "disko": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "nix-community",
+      "repo": "disko",
+      "branch": "master",
+      "revision": "latest",
+      "url": "https://github.com/nix-community/disko/archive/latest.tar.gz",
+      "hash": "sha256-CNzzBsRhq7gg4BMBuTDObiWDH/rFYHEuDRVOwCcwXw4="
+    },
+    "nixos-vscode-server": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "nix-community",
+      "repo": "nixos-vscode-server",
+      "branch": "master",
+      "revision": "2f984dfbe7e5271b5c413d3e734374cc1306c921",
+      "url": "https://github.com/nix-community/nixos-vscode-server/archive/2f984dfbe7e5271b5c413d3e734374cc1306c921.tar.gz",
+      "hash": "sha256-2uHCSUw341o3my1R0U0YCfbnMEazylxb58evWsjGL50="
+    },
+    "nixpkgs": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "nixos",
+      "repo": "nixpkgs",
+      "branch": "nixos-unstable",
+      "revision": "61b7c44c4073f0b827768aff0049561b5110ea5a",
+      "url": "https://github.com/nixos/nixpkgs/archive/61b7c44c4073f0b827768aff0049561b5110ea5a.tar.gz",
+      "hash": "sha256-12KrbMiWLcf8m7pCvAtZh1ZrgF85ZXDXvfR/fWTKy84="
+    },
+    "treefmt-nix": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "numtide",
+      "repo": "treefmt-nix",
+      "branch": "main",
+      "revision": "df3c0640565d04a0261253cdd89fce78ec50168a",
+      "url": "https://github.com/numtide/treefmt-nix/archive/df3c0640565d04a0261253cdd89fce78ec50168a.tar.gz",
+      "hash": "sha256-47cxbcZODibHv3rELFQ9vZly0vUNkND/atn/U7HLeb0="
+    }
+  }
+}
