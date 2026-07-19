@@ -1,8 +1,8 @@
 #!/usr/bin/env nix
 #! nix shell nixpkgs#nushell --command nu
 
-def first-existing []: list<string> -> string {
-    where { $it | path exists } | first?
+def first-existing [...paths: string]: list<string> -> string {
+    $paths | where ($it | path exists) | first
 }
 
 let ovmf_code = (
@@ -63,11 +63,13 @@ def main [
 		let temp_pass = (mktemp)
 		try {
 			"x" | save --force $temp_pass
-			./tmp-disko-script --pre-format-files $temp_pass /tmp/luks.secret
-		} catch { error make "Failed saving password for disk encryption" }
+			./tmp-disko-script --build-memory 2048 --pre-format-files $temp_pass /tmp/luks.secret
+		} catch { error make "Failed setting up virtual disk" }
 		finally {
 			rm --force $temp_pass tmp-disko-script
 		}
+
+		error make "Unimplemented!"
 
 		try {
 			if ("main.raw" | path exists) {
@@ -79,7 +81,7 @@ def main [
 					ls *.raw
 					| where name != $disk_image
 					| get name
-					| first?
+					| first
 				)
 
 				if $found == null {

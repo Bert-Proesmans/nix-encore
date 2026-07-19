@@ -4,12 +4,12 @@
     "disko": {
       "type": "GitHub",
       "fetchType": "tarball",
-      "owner": "nix-community",
+      "owner": "Bert-Proesmans",
       "repo": "disko",
-      "branch": "master",
-      "revision": "latest",
-      "url": "https://github.com/nix-community/disko/archive/latest.tar.gz",
-      "hash": "sha256-CNzzBsRhq7gg4BMBuTDObiWDH/rFYHEuDRVOwCcwXw4="
+      "branch": "fix-vmtools",
+      "revision": "cbdf19969b08c168f54a7bfef8364e34213f7ca8",
+      "url": "https://github.com/Bert-Proesmans/disko/archive/cbdf19969b08c168f54a7bfef8364e34213f7ca8.tar.gz",
+      "hash": "sha256-wwlwuOF/eDXTNMYJdGUHt0t0IX+XO4CN2ydgJy4lk3s="
     },
     "nixos-vscode-server": {
       "type": "GitHub",

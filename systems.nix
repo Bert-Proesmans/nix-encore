@@ -2,6 +2,9 @@
   self ? (import ./. { }),
   # Version-pinned dependencies, managed through the "lon" CLI.
   # REF; https://github.com/nikstur/lon
+  #
+  # WARN; Disko is pulled from fork, re-merge after completion of Disko PR-1277
+  # REF; https://github.com/nix-community/disko/pull/1277
   sources ? (import ./lon.nix),
 }:
 let
@@ -34,12 +37,8 @@ in
   # Setting outPath makes (toString self) work eg, "${self}/functionality.nix"
   outPath = ./.;
 
-  lenny = {
-    system = nixosSystem {
-      specialArgs = { inherit self sources; };
-      modules = [ ./lenny/configuration.nix ];
-    };
-
-    home = { };
+  lenny = nixosSystem {
+    specialArgs = { inherit self sources; };
+    modules = [ ./lenny/configuration.nix ];
   };
 }

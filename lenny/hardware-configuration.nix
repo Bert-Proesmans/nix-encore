@@ -1,9 +1,15 @@
 { ... }: {
   nixpkgs.hostPlatform = "x86_64-linux";
 
-  boot.initrd.systemd.enable = true;
+  boot.kernelParams = [
+    "systemd.log_level=debug"
+    "rd.systemd.show_status=1"
+  ];
+
+  # boot.initrd.systemd.enable = true;
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.editor = false;
+
   disko.devices = {
     disk.main = {
       type = "disk";
