@@ -11,6 +11,16 @@
       "url": "https://github.com/Bert-Proesmans/disko/archive/cbdf19969b08c168f54a7bfef8364e34213f7ca8.tar.gz",
       "hash": "sha256-wwlwuOF/eDXTNMYJdGUHt0t0IX+XO4CN2ydgJy4lk3s="
     },
+    "home-manager": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "nix-community",
+      "repo": "home-manager",
+      "branch": "master",
+      "revision": "079a3b5d1aa6a719920a51316253b7d6dd22738d",
+      "url": "https://github.com/nix-community/home-manager/archive/079a3b5d1aa6a719920a51316253b7d6dd22738d.tar.gz",
+      "hash": "sha256-JWq0BfjO4ktpH5USfQNQzdvHpIDT8fSKD5K7LvdMRFs="
+    },
     "nixos-vscode-server": {
       "type": "GitHub",
       "fetchType": "tarball",
@@ -27,9 +37,9 @@
       "owner": "nixos",
       "repo": "nixpkgs",
       "branch": "nixos-unstable",
-      "revision": "61b7c44c4073f0b827768aff0049561b5110ea5a",
-      "url": "https://github.com/nixos/nixpkgs/archive/61b7c44c4073f0b827768aff0049561b5110ea5a.tar.gz",
-      "hash": "sha256-12KrbMiWLcf8m7pCvAtZh1ZrgF85ZXDXvfR/fWTKy84="
+      "revision": "241313f4e8e508cb9b13278c2b0fa25b9ca27163",
+      "url": "https://github.com/nixos/nixpkgs/archive/241313f4e8e508cb9b13278c2b0fa25b9ca27163.tar.gz",
+      "hash": "sha256-vlHUuqAcbcH2RKmHbPiuQzbv1pnzzavXnI62RD0bqCU="
     },
     "treefmt-nix": {
       "type": "GitHub",

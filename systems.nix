@@ -41,4 +41,9 @@ in
     specialArgs = { inherit self sources; };
     modules = [ ./lenny/configuration.nix ];
   };
+
+  bootstrap = nixosSystem {
+    specialArgs = { inherit self sources; };
+    modules = [ ./bootstrap.nix ];
+  };
 }

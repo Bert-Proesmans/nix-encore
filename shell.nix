@@ -12,9 +12,13 @@ let
 in
 pkgs.mkShellNoCC {
   name = "Nix-encore shell";
+
+  NIXPKGS = "${sources.nixpkgs}";
+
   packages = [
     # Adds command treefmt to PATH, for formatting the codebase files
     (treefmt-nix.mkWrapper pkgs ./maintainer/treefmt.nix)
+    pkgs.lon # Source revision control
     (writeNuApplication {
       name = "e2e-test";
       runtimeInputs = [
@@ -23,6 +27,7 @@ pkgs.mkShellNoCC {
         pkgs.nix-output-monitor
         # pkgs.qemu
         # pkgs.openssh
+        pkgs.strace # Debugging
       ];
       runtimeEnv = {
         OVMF_CODE = "${pkgs.OVMF.fd}/FV/OVMF_CODE.fd";
@@ -35,6 +40,15 @@ pkgs.mkShellNoCC {
       #   print $env.PATH
       #   nom --help
       # '';
+    })
+    (writeNuApplication {
+      name = "deploy";
+      runtimeInputs = [
+        pkgs.runtimeShell # Shell out to bash to apply sensitive arguments
+        pkgs.nixos-anywhere # Deploy new hosts
+        pkgs.nix-output-monitor # For building and introspection
+      ];
+      text = builtins.readFile ./maintainer/deploy.nu;
     })
   ];
 }
