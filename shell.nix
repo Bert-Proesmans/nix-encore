@@ -44,9 +44,10 @@ pkgs.mkShellNoCC {
     (writeNuApplication {
       name = "deploy";
       runtimeInputs = [
-        pkgs.runtimeShell # Shell out to bash to apply sensitive arguments
-        pkgs.nixos-anywhere # Deploy new hosts
         pkgs.nix-output-monitor # For building and introspection
+        pkgs.nixos-anywhere # Deploy new hosts
+        pkgs.nixos-rebuild-ng
+        pkgs.runtimeShell # Shell out to bash to apply sensitive arguments
       ];
       text = builtins.readFile ./maintainer/deploy.nu;
     })

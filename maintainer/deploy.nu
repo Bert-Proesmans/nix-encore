@@ -13,6 +13,37 @@ def main [] {
 	print "main"
 }
 
+def "main update" [
+	name: string # The moniker of the host configuration
+] {
+	print "update"
+
+	let ssh_target = (input "What is the ssh connection string? ")
+	let extra_args = [
+		["--debug", "--no-reexec", "--no-flake", "--elevate=sudo", "--ask-elevate-password"]
+
+	] | flatten
+
+	with-env {} {
+		nixos-rebuild --file systems.nix --attr $name --target-host $ssh_target ...$extra_args switch
+	}
+}
+
+def "main vm" [
+	name: string # The moniker of the host configuration
+] {
+	print "vm"
+
+	let extra_args = [
+		["--debug"]
+	] | flatten
+
+	with-env {} {
+		nixos-rebuild --file systems.nix --attr $name ...$extra_args build-vm
+		# NOTE; You'll have to manually launch the vm scriptwrapper for now
+	}
+}
+
 def "main install" [
 	name: string # The moniker of the host configuration
 ] {
@@ -21,11 +52,11 @@ def "main install" [
 	# WARN; Footgun!!
 	# If you pipe external command output directly into other commandlets the error code of the external
 	# program is swallowed!
-	let build_result = {
+	let build_result = (
 		let format_installable = $"($name).config.system.build.diskoScript";
 		let toplevel_installable = $"($name).config.system.build.toplevel";
 		nix build --no-link --print-out-paths --file systems.nix $format_installable $toplevel_installable | complete
-	}
+	)
 
 	if $build_result.exit_code != 0 {
 		print -e $build_result.stderr # Must print stderr since I/O has been swallowed

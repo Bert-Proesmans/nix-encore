@@ -15,6 +15,14 @@
     # Enables automatic low-power mode
     wifi.powersave = true;
   };
+  nix.settings.trusted-public-keys = [ "development.local-1:Wq31nOqkJWq1EIMabjKnLSCdlPwb5xmsZDur+RZNE4I=" ];
+
+  programs.firefox.enable = true;
+  programs.hyprland = {
+    enable = true;
+    withUWSM = true; # recommended for most users
+    xwayland.enable = true; # Xwayland can be disabled.
+  };
 
   services.displayManager.sddm = {
     enable = true;
@@ -97,5 +105,4 @@
     programs.kitty.enable = true; # required for the default Hyprland config
   };
 
-  programs.firefox.enable = true;
 }
