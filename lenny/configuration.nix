@@ -1,4 +1,11 @@
-{ sources, pkgs, ... }: {
+{
+  sources,
+  lib,
+  pkgs,
+  config,
+  ...
+}:
+{
   imports = [
     (sources.disko + "/module.nix")
     ./hardware-configuration.nix
@@ -15,23 +22,38 @@
     # Enables automatic low-power mode
     wifi.powersave = true;
   };
-  nix.settings.trusted-public-keys = [ "development.local-1:Wq31nOqkJWq1EIMabjKnLSCdlPwb5xmsZDur+RZNE4I=" ];
+  nix.settings.trusted-public-keys = [
+    "development.local-1:Wq31nOqkJWq1EIMabjKnLSCdlPwb5xmsZDur+RZNE4I="
+  ];
 
   programs.firefox.enable = true;
   programs.hyprland = {
     enable = true;
-    withUWSM = true; # recommended for most users
+    # Configure dbus
+    withUWSM = false;
     xwayland.enable = true; # Xwayland can be disabled.
   };
+  programs.hyprlock.enable = true;
+  services.hypridle.enable = true;
 
-  services.displayManager.sddm = {
+  services.greetd = {
     enable = true;
-
-    wayland = {
-      enable = true;
-      # default compositor is "weston"
-      #compositor = "kwin";
-    };
+    useTextGreeter = true;
+    settings =
+      let
+        startHyprland = "/run/current-system/sw/bin/start-hyprland";
+      in
+      {
+        # Automatic sign-in. The sign-in through greeter is kept because that breaks a crashloop if something would happen to hyprland
+        initial_session = {
+          command = startHyprland;
+          user = config.users.users.bert-proesmans.name;
+        };
+        default_session = {
+          command = "${lib.getExe pkgs.tuigreet} --time --remember --remember-session --cmd ${startHyprland}";
+          # user = "greeter"; # Implicitly set by greetd
+        };
+      };
   };
 
   services.logind.settings.Login = {
@@ -100,9 +122,60 @@
     ];
     packages = [ ];
   };
-  home-manager.users.bert-proesmans = { ... }: {
+
+  home-manager.users.bert-proesmans = { lib, ... }: {
     home.stateVersion = "26.05";
+    # Hint electron apps to use Wayland
+    home.sessionVariables.NIXOS_OZONE_WL = "1";
+
     programs.kitty.enable = true; # required for the default Hyprland config
+
+    wayland.windowManager.hyprland = {
+      enable = true;
+      # Direct systemd integration conflicts with Universal Wayland Session Manager (UWSM)
+      systemd.enable = false;
+      # set the Hyprland and XDPH packages to null to use the ones from the NixOS module
+      package = null;
+      portalPackage = null;
+
+      configType = "lua";
+      settings = {
+        config = {
+          general = {
+            gaps_in = 5;
+            gaps_out = 20;
+            border_size = 2;
+          };
+          decoration = {
+            rounding = 10;
+          };
+        };
+
+        # NOTE; SUPER key is [Windows] key
+        bind = [
+          {
+            _args = [
+              "SUPER + L"
+              (lib.generators.mkLuaInline "hl.dsp.exec_cmd(\"wpctl set-sink-mute @DEFAULT_SINK@ 1 ; hyprlock\")")
+            ];
+          }
+          {
+            _args = [
+              "SUPER + RETURN"
+              (lib.generators.mkLuaInline "hl.dsp.exec_cmd(\"kitty\")")
+            ];
+          }
+          {
+            _args = [
+              "SUPER + S"
+              (lib.generators.mkLuaInline "hl.dsp.workspace.toggle_special(\"magic\")")
+            ];
+          }
+        ];
+      };
+    };
+
+    programs.hyprlock.enable = true;
   };
 
 }
