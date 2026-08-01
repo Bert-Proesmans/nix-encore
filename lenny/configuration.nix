@@ -4,6 +4,9 @@
   config,
   ...
 }:
+let
+  noctalia = import sources.noctalia { inherit pkgs; };
+in
 {
   imports = [ ./required.nix ];
 
@@ -287,6 +290,7 @@
       ...
     }:
     {
+      imports = [ noctalia.homeModule ];
       home.stateVersion = "26.05";
 
       programs.alacritty.enable = true;
@@ -855,6 +859,101 @@
               spawn-sh = "wl-mirror $(niri msg --json focused-output | jq -r .name)";
             };
           };
+        };
+      };
+
+      programs.noctalia = {
+        enable = true;
+        # WARN; NOT using nixpkgs upstream package will cause the buildhost to compile Noctalia!
+        package = pkgs.noctalia;
+        systemd.enable = true;
+        validateConfig = true;
+        settings = {
+          shell = {
+            font = "JetBrainsMono Nerd Font";
+            settings_show_advanced = true;
+            launch_apps_as_systemd_services = true;
+            polkit_agent = true;
+            screen_time_enabled = true;
+
+            panel.session_placement = "floating";
+            panel.transparency_mode = "soft";
+
+            # Why is this default true, WTF??
+            launcher.fetch_exchange_rates = false;
+          };
+
+          theme = {
+            mode = "dark";
+            source = "wallpaper";
+            wallpaper_scheme = "faithful";
+            templates.builtin_ids = [
+              "alacritty"
+              "niri"
+            ];
+          };
+
+          dock = {
+            enabled = true;
+            active_monitor_only = true;
+            magnification = false;
+            reserve_space = false;
+            smart_auto_hide = true;
+            icon_size = 32;
+            show_running = false;
+            launcher_position = "start";
+            launcher_icon = "topology-ring-2";
+            pinned = [
+              "firefox"
+              "codium"
+              "alacritty"
+            ];
+          };
+
+          bar = {
+            # Only need one icon bar
+            order = [ "default" ];
+            default = {
+              enabled = true;
+              reserve_space = false;
+              position = "right";
+              smart_auto_hide = true;
+              dead_zone.actions.left = "bar-hide";
+              start = [
+                "notifications"
+                "clock"
+              ];
+              center = [
+                "output_volume"
+                "brightness"
+                "network"
+                "battery"
+              ];
+              end = [ "session" ];
+            };
+          };
+
+          widget = {
+            bluetooth.enabled = false;
+            clipboard.enabled = false;
+            launcher.enabled = false;
+            media.enabled = false;
+            wallpaper.enabled = false;
+            workspaces.enabled = false;
+          };
+
+          control_center = {
+            hidden_tabs = [
+              "media"
+              "system"
+              "weather"
+              "calendar"
+              "notifications"
+            ];
+            sidebar = "full";
+          };
+
+          # TODO; Lockscreen widgets
         };
       };
     };
