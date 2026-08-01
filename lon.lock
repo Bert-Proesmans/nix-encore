@@ -52,6 +52,16 @@
       "url": "https://github.com/nixos/nixpkgs/archive/1559d3daa3ecc813a650b79375ea61b6741b8746.tar.gz",
       "hash": "sha256-LQy14TZp77TwbQf40gg1V3jo8FwJG0jGDkAH+zRHqg8="
     },
+    "noctalia": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "noctalia-dev",
+      "repo": "noctalia",
+      "branch": "main",
+      "revision": "73e498510e6f134b038a1c399bfe18e4e807102a",
+      "url": "https://github.com/noctalia-dev/noctalia/archive/73e498510e6f134b038a1c399bfe18e4e807102a.tar.gz",
+      "hash": "sha256-BembuDefgisohYMY/RGe1gi1Ldkr0CUjP1TMgLphUI4="
+    },
     "treefmt-nix": {
       "type": "GitHub",
       "fetchType": "tarball",
