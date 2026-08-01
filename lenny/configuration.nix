@@ -557,13 +557,17 @@ in
               };
               spawn = [ "alacritty" ];
             };
+            # ERROR; Niri currently does not accept the MOD key on its own as a keybind! The code is not properly
+            # handling pressed/unpressed state when this keybind overlaps with all the others.
+            # Hacky workaround (but it still hangs) is to bind into the same key with the exact modifier.
+            # REF; https://github.com/niri-wm/niri/issues/605
             "Mod+D" = {
               _props = {
-                hotkey-overlay-title = "Run an Application: fuzzel";
+                hotkey-overlay-title = "Open app launcher";
               };
               spawn = [ "fuzzel" ];
             };
-            "Super+L" = {
+            "Mod+L" = {
               _props = {
                 hotkey-overlay-title = "Lock the Screen";
               };
@@ -579,6 +583,7 @@ in
               # // The quit action will show a confirmation dialog to avoid accidental exits.
               quit = { };
             };
+            # NOTE; Overlaps with shortcut that is caught/handled by systemd (??)
             "Ctrl+Alt+Delete" = {
               _props = {
                 hotkey-overlay-title = "Exit window manager";
