@@ -17,9 +17,20 @@
       "owner": "nix-community",
       "repo": "home-manager",
       "branch": "master",
-      "revision": "079a3b5d1aa6a719920a51316253b7d6dd22738d",
-      "url": "https://github.com/nix-community/home-manager/archive/079a3b5d1aa6a719920a51316253b7d6dd22738d.tar.gz",
-      "hash": "sha256-JWq0BfjO4ktpH5USfQNQzdvHpIDT8fSKD5K7LvdMRFs="
+      "revision": "bf9ce9fec78f95f374e8dd3b503863a3ec128ebe",
+      "url": "https://github.com/nix-community/home-manager/archive/bf9ce9fec78f95f374e8dd3b503863a3ec128ebe.tar.gz",
+      "hash": "sha256-vkMnV0JIyw+g/NmcfoajlGaAO+9a0ezia+FZohQJrik="
+    },
+    "ly-themes": {
+      "type": "Git",
+      "fetchType": "git",
+      "frozen": true,
+      "branch": "main",
+      "revision": "2f22cfaf7d17598c8f60f562d56e16d74b6c99ab",
+      "url": "https://codeberg.org/fairyglade/ly-community.git",
+      "hash": "sha256-BQhlvWmEkXNpbUgtGBzbHjdQwRa2jxHhBBNu8sVzIDQ=",
+      "lastModified": 1783331194,
+      "submodules": false
     },
     "nixos-vscode-server": {
       "type": "GitHub",
@@ -37,9 +48,9 @@
       "owner": "nixos",
       "repo": "nixpkgs",
       "branch": "nixos-unstable",
-      "revision": "241313f4e8e508cb9b13278c2b0fa25b9ca27163",
-      "url": "https://github.com/nixos/nixpkgs/archive/241313f4e8e508cb9b13278c2b0fa25b9ca27163.tar.gz",
-      "hash": "sha256-vlHUuqAcbcH2RKmHbPiuQzbv1pnzzavXnI62RD0bqCU="
+      "revision": "1559d3daa3ecc813a650b79375ea61b6741b8746",
+      "url": "https://github.com/nixos/nixpkgs/archive/1559d3daa3ecc813a650b79375ea61b6741b8746.tar.gz",
+      "hash": "sha256-LQy14TZp77TwbQf40gg1V3jo8FwJG0jGDkAH+zRHqg8="
     },
     "treefmt-nix": {
       "type": "GitHub",
@@ -47,9 +58,9 @@
       "owner": "numtide",
       "repo": "treefmt-nix",
       "branch": "main",
-      "revision": "df3c0640565d04a0261253cdd89fce78ec50168a",
-      "url": "https://github.com/numtide/treefmt-nix/archive/df3c0640565d04a0261253cdd89fce78ec50168a.tar.gz",
-      "hash": "sha256-47cxbcZODibHv3rELFQ9vZly0vUNkND/atn/U7HLeb0="
+      "revision": "d1187f8bc71fb8aab02395869ec3f5c1920f75c0",
+      "url": "https://github.com/numtide/treefmt-nix/archive/d1187f8bc71fb8aab02395869ec3f5c1920f75c0.tar.gz",
+      "hash": "sha256-XE1lKgQ3eIO3E7zWryqcRsax+mYXod/5RHBn4YaR9YE="
     }
   }
 }
