@@ -6,13 +6,20 @@
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
+  hardware.cpu.amd.updateMicrocode = config.hardware.enableRedistributableFirmware;
   hardware.cpu.intel.npu.enable = true;
   hardware.cpu.intel.updateMicrocode = config.hardware.enableRedistributableFirmware;
+  hardware.graphics.enable = true;
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.editor = false;
   # TODO; Is it necessary to edit EFI config while updating the system?
   boot.loader.efi.canTouchEfiVariables = true;
+
+  boot.tmp = {
+    useZram = true;
+    zramSettings.zram-size = "min(ram * 0.5, 4096)";
+  };
 
   boot.initrd.systemd.enable = true;
   boot.initrd.availableKernelModules = [
@@ -23,6 +30,8 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
+
+  services.fstrim.enable = true;
 
   disko.devices = {
     disk.main = {
