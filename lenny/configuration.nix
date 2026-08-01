@@ -57,6 +57,25 @@ in
     MOZ_ENABLE_WAYLAND = "1";
   };
 
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = false;
+    settings = {
+      General = {
+        Experimental = true; # Show battery charge of Bluetooth devices
+      };
+    };
+  };
+
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
+    wireplumber.enable = true;
+  };
+
   services.displayManager = {
     autoLogin.enable = true;
     autoLogin.user = config.users.users.bert-proesmans.name;
@@ -273,6 +292,28 @@ in
     recommendedServices.enable = true;
   };
 
+  programs.firefox = {
+    # NOTE; Firefox is _wrapped_ with the policies, there is no global/local config, and a firefox on system PATH could become the wrong
+    # firefox. As in, missing policies that are applied through home-manager.
+    #
+    # ERROR; Make sure that the home-manager wrapped version of firefox is found FIRST on PATH!
+    # Use 'config.programs.firefox.finalPackage' as starting point for wrapping.
+    enable = true;
+
+    languagePacks = [
+      "en-GB"
+      "nl"
+      "fr"
+    ];
+
+    preferences = {
+      "browser.startup.homepage" = "https://wiki.proesmans.eu";
+      "privacy.resistFingerprinting" = true;
+    };
+
+    policies = { };
+  };
+
   # Basic system packages
   environment.systemPackages = [
     pkgs.brightnessctl
@@ -287,14 +328,29 @@ in
 
   home-manager.users.bert-proesmans =
     {
+      config,
+      osConfig,
       ...
     }:
     {
       imports = [ noctalia.homeModule ];
       home.stateVersion = "26.05";
 
-      programs.alacritty.enable = true;
-      programs.fuzzel.enable = true;
+      programs.alacritty = {
+        enable = true;
+        settings = {
+          font = {
+            size = 11;
+            normal = {
+              family = "JetBrainsMono Nerd Font";
+              style = "Regular";
+            };
+          };
+        };
+      };
+      programs.fuzzel = {
+        enable = true;
+      };
 
       wayland.windowManager.niri = {
         enable = true;
@@ -959,6 +1015,108 @@ in
           };
 
           # TODO; Lockscreen widgets
+        };
+      };
+
+      programs.nushell.enable = true;
+
+      programs.firefox = {
+        enable = true;
+        package = osConfig.programs.firefox.finalPackage;
+
+        policies = {
+          # Updates & Background Services
+          AppAutoUpdate = false;
+          BackgroundAppUpdate = false;
+
+          # Feature Disabling
+          DisableBuiltinPDFViewer = true;
+          DisableFirefoxStudies = true;
+          DisableFirefoxAccounts = true;
+          DisableFirefoxScreenshots = true;
+          DisableForgetButton = true;
+          DisableMasterPasswordCreation = true;
+          DisableProfileImport = true;
+          DisableProfileRefresh = true;
+          DisableSetDesktopBackground = true;
+          DisablePocket = true;
+          DisableTelemetry = true;
+          DisableFormHistory = true;
+          DisablePasswordReveal = true;
+
+          # Access Restrictions
+          BlockAboutConfig = false;
+          BlockAboutProfiles = true;
+          BlockAboutSupport = true;
+
+          # UI and Behavior
+          DisplayMenuBar = "never";
+          DontCheckDefaultBrowser = true;
+          HardwareAcceleration = true;
+          OfferToSaveLogins = false;
+          DefaultDownloadDirectory = config.xdg.userDirs.download;
+
+          # Extensions
+          ExtensionSettings =
+            let
+              moz = short: "https://addons.mozilla.org/firefox/downloads/latest/${short}/latest.xpi";
+            in
+            {
+              "*".installation_mode = "blocked";
+
+              "uBlock0@raymondhill.net" = {
+                install_url = moz "ublock-origin";
+                installation_mode = "force_installed";
+                updates_disabled = false;
+                default_area = "menupanel";
+                private_browsing = true;
+              };
+
+              # TODO; Bitwarden
+              # TODO; Consent-o-matic
+              # TODO; Treestyle tabs
+              # TODO; BE-ID
+            };
+
+          # Extension configuration
+          "3rdparty".Extensions = {
+            "uBlock0@raymondhill.net".adminSettings = {
+              userSettings = {
+                # cloudStorageEnabled = mkForce false;
+
+                # importedLists = [
+                #   "https:#filters.adtidy.org/extension/ublock/filters/3.txt"
+                #   "https:#github.com/DandelionSprout/adfilt/raw/master/LegitimateURLShortener.txt"
+                # ];
+
+                # externalLists = lib.concatStringsSep "\n" importedLists;
+              };
+
+              selectedFilterLists = [
+                "user-filters"
+                "ublock-filters"
+                "ublock-badware"
+                "ublock-privacy"
+                "ublock-quick-fixes"
+                "ublock-unbreak"
+                "easylist"
+                "easyprivacy"
+                "urlhaus-1"
+                "plowe-0"
+                "fanboy-cookiemonster"
+                "ublock-cookies-easylist"
+              ];
+            };
+          };
+        };
+
+        profiles.default.search = {
+          force = true;
+          default = "ddg";
+          privateDefault = "ddg";
+
+          # NOTE; I'm using bookmarks with shortcuts as search engine. Those sync between devices
+          # engines = {};
         };
       };
     };
