@@ -59,13 +59,29 @@ in
 
   security.rtkit.enable = true;
   services.pipewire = {
-    # WARN; Requires rtkit configuration!
+    # WARN; Requires rtkit configuration! (resolved above)
     enable = true;
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
     jack.enable = true;
-    wireplumber.enable = true;
+    wireplumber = {
+      enable = true;
+      # Explicitly enable high-quality extra codecs and hardware volume
+      extraConfig.bluetoothEnhancements = {
+        "monitor.bluez.properties" = {
+          "bluez5.enable-sbc-xq" = true;
+          "bluez5.enable-msbc" = true;
+          "bluez5.enable-hw-volume" = true;
+          "bluez5.roles" = [
+            "hsp_hs"
+            "hsp_ag"
+            "hfp_hf"
+            "hfp_ag"
+          ];
+        };
+      };
+    };
   };
 
   services.displayManager = {
@@ -280,7 +296,11 @@ in
   # Desktop shell
   programs.noctalia = {
     enable = true;
-    systemd.enable = true; # user service
+    systemd.enable = true; # This is a user service
+    # networking.networkmanager.enable
+    # hardware.bluetooth.enable
+    # services.upower.enable
+    # services.power-profiles-daemon.enable
     recommendedServices.enable = true;
   };
 
@@ -311,6 +331,7 @@ in
     pkgs.brightnessctl
     # pkgs.wireplumber # wpctl -> activated by services.pipewire.wireplumber
     pkgs.playerctl
+    pkgs.libnotify # notify-send
     pkgs.wl-mirror
     pkgs.jq
 
@@ -363,6 +384,15 @@ in
           #
           # WARN; An empty config node removes all defaults and resets toplevel primitive values to "initialized at empty".
 
+          debug = {
+            # Allows notification actions and window activation from Noctalia.
+            #
+            # ERROR; This is also a workaround for Electron/Qt applications that fail to report a valid window serial when launching (main) windows
+            # from notification or icon.
+            # REF; https://niri-wm.github.io/niri/Configuration%3A-Debug-Options.html#honor-xdg-activation-with-invalid-serial
+            honor-xdg-activation-with-invalid-serial = { };
+          };
+
           input = {
             # Enable numlock on startup, omitting this setting disables numlock.
             keyboard.numlock = { };
@@ -389,7 +419,7 @@ in
           # https://niri-wm.github.io/niri/Configuration:-Layout
           layout = {
             # Set gaps around windows in logical pixels.
-            gaps = 16;
+            gaps = 4;
 
             # When to center a column when changing focus, options are:
             # - "never", default behavior, focusing an off-screen column will keep at the left
@@ -523,6 +553,28 @@ in
             # https://niri-wm.github.io/niri/Configuration:-Window-Rules
             #
             {
+              # Example: enable rounded corners for all windows.
+              # (This example rule is commented out with a "/-" in front.)
+              window-rule._children = [
+                { geometry-corner-radius = 20; }
+                { clip-to-geometry = true; }
+              ];
+            }
+            {
+              window-rule._children = [
+                {
+                  match._props = {
+                    # This is the noctalia settings window
+                    app-id = "dev.noctalia.Noctalia";
+                  };
+                }
+                # Make it large and float
+                { open-floating = true; }
+                { default-column-width.fixed = 1080; }
+                { default-window-height.fixed = 920; }
+              ];
+            }
+            {
               # Open the Firefox picture-in-picture player as floating by default.
               window-rule._children = [
                 # This app-id regular expression will work for both:
@@ -554,14 +606,6 @@ in
               ];
             }
             {
-              # Example: enable rounded corners for all windows.
-              # (This example rule is commented out with a "/-" in front.)
-              window-rule._children = [
-                { geometry-corner-radius = 12; }
-                { clip-to-geometry = true; }
-              ];
-            }
-            {
               # Indicate screencasted windows with red colors.
               window-rule._children = [
                 {
@@ -582,6 +626,56 @@ in
                     active-color = "#f38ba8";
                     inactive-color = "#7d0d2d";
                   };
+                }
+              ];
+            }
+            # Layer rules let you adjust behavior for individual layer-shell surfaces. They work similarly to Window rules.
+            # Find more information on the wiki:
+            # https://niri-wm.github.io/niri/Configuration:-Layer-Rules
+            {
+              # Make the niri overview mode a tad more fancy with blurred background in the backdrop.
+              #
+              # NOTE; Requires Noctalia configuration to render the backdrop.
+              # REF; https://docs.noctalia.dev/v5/desktop/wallpaper/?section=backdrop#backdrop
+              layer-rule._children = [
+                {
+                  match._props = {
+                    namespace = "^noctalia-backdrop";
+                  };
+                }
+                { place-within-backdrop = true; }
+              ];
+            }
+            {
+              # Disable xray on all our surfaces so it looks more realistic.
+              # Noctalia publishes blur regions automatically when ext-background-effects is available.
+              layer-rule._children = [
+                {
+                  match._props = {
+                    namespace = "^noctalia-(bar-[^\"]+|notification|dock|panel|attached-panel|osd)$";
+                  };
+                }
+                {
+                  background-effect._children = [
+                    { xray = false; }
+                    # { blur = false; }
+                  ];
+                }
+              ];
+            }
+            {
+              # Enable blur on noctalia's window switcher and disable xray.
+              layer-rule._children = [
+                {
+                  match._props = {
+                    namespace = "noctalia-window-switcher";
+                  };
+                }
+                {
+                  background-effect._children = [
+                    { blur = true; }
+                    { xray = false; }
+                  ];
                 }
               ];
             }
@@ -612,11 +706,12 @@ in
             # handling pressed/unpressed state when this keybind overlaps with all the others.
             # Hacky workaround (but it still hangs) is to bind into the same key with the exact modifier.
             # REF; https://github.com/niri-wm/niri/issues/605
-            "Mod+D" = {
+            "Mod+Space" = {
               _props = {
                 hotkey-overlay-title = "Open app launcher";
+                repeat = false;
               };
-              spawn = [ "fuzzel" ];
+              spawn-sh = "noctalia msg panel-toggle launcher";
             };
             "Mod+L" = {
               _props = {
@@ -926,7 +1021,7 @@ in
         validateConfig = true;
         settings = {
           shell = {
-            font = "JetBrainsMono Nerd Font";
+            font_family = "Montserrat SemiBold";
             settings_show_advanced = true;
             launch_apps_as_systemd_services = true;
             polkit_agent = true;
@@ -1000,16 +1095,80 @@ in
 
           control_center = {
             hidden_tabs = [
+              # "notifications" # turns out notification history is useful
+              # "system" # show cpu/ram/network metrics
               "media"
-              "system"
               "weather"
               "calendar"
-              "notifications"
             ];
             sidebar = "full";
           };
 
-          # TODO; Lockscreen widgets
+          backdrop = {
+            enabled = true;
+            blur_intensity = 0.5; # 0.0 = no blur, 1.0 = maximum blur
+            tint_intensity = 0.3; # 0.0 = no tint, 1.0 = fully opaque tint
+          };
+
+          idle = {
+            # Use Noctalia builtin idle handling (instead of swayidle/other wayland tracker)
+            behavior_order = [
+              "inform"
+              "lock"
+              "screen-off"
+              "suspend"
+            ];
+            # NOTE; This triggers before _every_ configured behavior!
+            pre_action_fade_seconds = 0;
+            behavior.inform = {
+              enabled = true;
+              timeout = 285; # Seconds
+              action = "command";
+              command = "notify-send --app-name 'Idle watcher' --expire-time 15000 --transient 'Idle' 'Going idle in 15s'";
+            };
+            behavior.lock = {
+              enabled = true;
+              timeout = 300; # Seconds
+              action = "lock"; # builtin action, lock session
+            };
+            behavior.screen-off = {
+              enabled = true;
+              timeout = 330; # Seconds
+              action = "screen_off"; # builtin, turns monitors off and back on when you return
+            };
+            behavior.suspend = {
+              enabled = true;
+              timeout = 600; # Seconds
+              # or action = "suspend" with lock_before_suspend = false
+              action = "lock_and_suspend"; # builtin, suspends the system
+            };
+          };
+
+          lockscreen_widgets = {
+            enabled = true;
+            schema_version = 2;
+            grid = {
+              cell_size = 8;
+              major_interval = 4;
+              visible = true;
+            };
+            widget_order = [
+              "lockscreen-login-box@eDP-1"
+              "lockscreen-widget-clock"
+            ];
+            widget."lockscreen-widget-clock" = {
+              type = "clock";
+              box_height = 192.0;
+              box_width = 384.0;
+              cx = 768.0;
+              cy = 256.0;
+
+              settings = {
+                background = false;
+                center_text = true;
+              };
+            };
+          };
         };
       };
 

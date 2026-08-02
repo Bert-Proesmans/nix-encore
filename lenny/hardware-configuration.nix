@@ -1,5 +1,6 @@
 {
   modulesPath,
+  sources,
   config,
   pkgs,
   ...
@@ -9,12 +10,15 @@
   imports = [
     # TODO; Remove on completion of hardware config
     (modulesPath + "/installer/scan/not-detected.nix")
+    (sources.nixos-hardware + "/lenovo/thinkpad/l14/intel")
+    (sources.nixos-hardware + "/common/cpu/intel/meteor-lake")
+    # (sources.nixos-hardware + "/lenovo/thinkpad/l14/amd")
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   hardware.enableRedistributableFirmware = true;
   hardware.wirelessRegulatoryDatabase = true;
-  hardware.cpu.amd.updateMicrocode = config.hardware.enableRedistributableFirmware;
+  # hardware.cpu.amd.updateMicrocode = config.hardware.enableRedistributableFirmware;
   hardware.cpu.intel.npu.enable = true;
   hardware.cpu.intel.updateMicrocode = config.hardware.enableRedistributableFirmware;
   hardware.graphics.enable = true;
@@ -25,6 +29,7 @@
     settings = {
       General = {
         Experimental = true; # Show battery charge of Bluetooth devices
+        FastConnectable = true; # Lowers connection latency and helps with low-power device waking
       };
     };
   };
@@ -195,33 +200,49 @@
 
   services.fstrim.enable = true;
   services.logind.settings.Login = {
+    # WARN; Even though logind has configuration for idle monitoring, that is currently not integrated!
+    # Keyboard/mouse tracking is handled through swayidle.
     HandleLidSwitch = "suspend";
     HandleLidSwitchExternalPower = "lock";
     HandleLidSwitchDocked = "ignore";
   };
 
-  # Prevent (Intel) CPU overheating
-  services.thermald.enable = true;
-  services.tlp = {
-    # Automatically adjust system power profiles
-    enable = false;
-    settings = {
-      CPU_SCALING_GOVERNOR_ON_AC = "performance";
-      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+  # ERROR; Thermald automatically shuts down on start
+  # => Lenovo laptops require thinkpad_acpi kernel driver that includes a dynamic thermal manager
+  # HINT; Set 'services.power-profiles-daemon.enable' to true instead. (enabled by noctalia)
+  services.thermald.enable = false;
+  # TLP is incompatible with power-profiles-daemon, and too aggressive of a scaler.
+  # WARN; Modern CPUs are built to race into sleep, capping their max performance gives marginal power gains and
+  # non-lineair negative effects on performance.
+  services.tlp.enable = false;
 
-      CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
-      CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+  systemd.tmpfiles.rules = [
+    # Start charging at or below 75%
+    "w /sys/class/power_supply/BAT0/charge_control_start_threshold - - - - 75"
+    # Stop charging at or above 80%
+    "w /sys/class/power_supply/BAT0/charge_control_end_threshold   - - - - 80"
+  ];
 
-      CPU_MIN_PERF_ON_AC = 0;
-      CPU_MAX_PERF_ON_AC = 100;
-      CPU_MIN_PERF_ON_BAT = 0;
-      CPU_MAX_PERF_ON_BAT = 20; # ??
+  environment.systemPackages = [
+    (pkgs.writeShellApplication {
+      name = "admin-force-battery-discharge";
+      runtimeInputs = [];
+      text = ''
+        # Forces the battery controller to discharge the battery
+        # - even though charging threshold isn't met
+        # - even though the computer is connected to AC power
 
-      # Optional helps save long term battery health
-      START_CHARGE_THRESH_BAT0 = 75; # charge below 75
-      STOP_CHARGE_THRESH_BAT0 = 80; # stop charging at or above 80
-    };
-  };
+        BATTERY_DEV=/sys/class/power_supply/BAT0
+        if [[ ! -r "$BATTERY_DEV/charge_behaviour" || ! -w "$BATTERY_DEV/charge_behaviour" ]]; then
+          echo "Script must run as root to access battery controller"
+          exit 1
+        fi
+
+        echo "force-discharge" > "$BATTERY_DEV/charge_behaviour"
+        echo "Battery set to force-discharge mode."
+      '';
+    })
+  ];
 
   systemd.sleep.settings.Sleep = {
     AllowSuspendThenHibernate = "yes";

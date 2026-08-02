@@ -32,6 +32,16 @@
       "lastModified": 1783331194,
       "submodules": false
     },
+    "nixos-hardware": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "NixOS",
+      "repo": "nixos-hardware",
+      "branch": "master",
+      "revision": "2e790b0a6be8ec2b76174ac0931b8ff11919ec98",
+      "url": "https://github.com/NixOS/nixos-hardware/archive/2e790b0a6be8ec2b76174ac0931b8ff11919ec98.tar.gz",
+      "hash": "sha256-65EQYIRRpTdpH8lUiB6Mvo5uBkG60aBIzAJuALfx+O0="
+    },
     "nixos-vscode-server": {
       "type": "GitHub",
       "fetchType": "tarball",
