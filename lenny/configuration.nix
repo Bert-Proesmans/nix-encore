@@ -57,17 +57,9 @@ in
     MOZ_ENABLE_WAYLAND = "1";
   };
 
-  hardware.bluetooth = {
-    enable = true;
-    powerOnBoot = false;
-    settings = {
-      General = {
-        Experimental = true; # Show battery charge of Bluetooth devices
-      };
-    };
-  };
-
+  security.rtkit.enable = true;
   services.pipewire = {
+    # WARN; Requires rtkit configuration!
     enable = true;
     alsa.enable = true;
     alsa.support32Bit = true;
@@ -317,13 +309,16 @@ in
   # Basic system packages
   environment.systemPackages = [
     pkgs.brightnessctl
-    pkgs.wireplumber # wpctl
+    # pkgs.wireplumber # wpctl -> activated by services.pipewire.wireplumber
     pkgs.playerctl
     pkgs.wl-mirror
     pkgs.jq
 
     pkgs.nixfmt
     pkgs.vscodium
+
+    pkgs.pciutils # lspci
+    pkgs.usbutils # lsusb
   ];
 
   home-manager.users.bert-proesmans =

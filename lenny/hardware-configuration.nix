@@ -1,4 +1,10 @@
-{ modulesPath, config, ... }: {
+{
+  modulesPath,
+  config,
+  pkgs,
+  ...
+}:
+{
 
   imports = [
     # TODO; Remove on completion of hardware config
@@ -6,10 +12,22 @@
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
+  hardware.enableRedistributableFirmware = true;
+  hardware.wirelessRegulatoryDatabase = true;
   hardware.cpu.amd.updateMicrocode = config.hardware.enableRedistributableFirmware;
   hardware.cpu.intel.npu.enable = true;
   hardware.cpu.intel.updateMicrocode = config.hardware.enableRedistributableFirmware;
   hardware.graphics.enable = true;
+
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = false;
+    settings = {
+      General = {
+        Experimental = true; # Show battery charge of Bluetooth devices
+      };
+    };
+  };
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.editor = false;
@@ -31,8 +49,25 @@
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
-  services.fstrim.enable = true;
-
+  fileSystems = {
+    # /nix attrset is completed by disko.
+    "/nix" = {
+      # Add option 'x-initrd.mount' to fstab, systemd should ignore managing this mount
+      # ERROR; It doesn't, see the dropin unit below !!
+      neededForBoot = true;
+      # Disconnect the mount from fsck (systemd-fsck@%I.service).
+      # If a mount has a Requires= on another service, stopping that other service will propagate a stop
+      # to our mount as well! We don't want our /nix mount to be stopped!
+      noCheck = true;
+    };
+  };
+  systemd.units."nix.mount" = {
+    overrideStrategy = "asDropin";
+    text = ''
+      [Unit]
+      DefaultDependencies = no
+    '';
+  };
   disko.devices = {
     disk.main = {
       type = "disk";
@@ -89,10 +124,11 @@
                 "--sector-size 4096" # 4K, LUKS does not support 16K
               ];
               extraOpenArgs = [ ];
+              # If you want to use the key for interactive login be sure there is no trailing newline
+              # for example use `echo -n "password" > /tmp/disk1.key`
+              # NOTE; passwordFile != settings.keyFile, the latter is _also_ used for unlocking during initrd on the installed system
+              passwordFile = "/tmp/disk1.key";
               settings = {
-                # if you want to use the key for interactive login be sure there is no trailing newline
-                # for example use `echo -n "password" > /tmp/disk1.key`
-                keyFile = "/tmp/disk1.key";
                 allowDiscards = true; # optimized for ssd
                 bypassWorkqueues = true; # optimized for ssd (no read/write batching in kernel)
               };
@@ -147,5 +183,48 @@
         };
       };
     };
+  };
+
+  services.dbus = {
+    brokerPackage = pkgs.dbus-broker.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [
+        ./dbus-duplicate-service-log-extender.patch
+      ];
+    });
+  };
+
+  services.fstrim.enable = true;
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend";
+    HandleLidSwitchExternalPower = "lock";
+    HandleLidSwitchDocked = "ignore";
+  };
+
+  # Prevent (Intel) CPU overheating
+  services.thermald.enable = true;
+  services.tlp = {
+    # Automatically adjust system power profiles
+    enable = false;
+    settings = {
+      CPU_SCALING_GOVERNOR_ON_AC = "performance";
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+
+      CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
+      CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+
+      CPU_MIN_PERF_ON_AC = 0;
+      CPU_MAX_PERF_ON_AC = 100;
+      CPU_MIN_PERF_ON_BAT = 0;
+      CPU_MAX_PERF_ON_BAT = 20; # ??
+
+      # Optional helps save long term battery health
+      START_CHARGE_THRESH_BAT0 = 75; # charge below 75
+      STOP_CHARGE_THRESH_BAT0 = 80; # stop charging at or above 80
+    };
+  };
+
+  systemd.sleep.settings.Sleep = {
+    AllowSuspendThenHibernate = "yes";
+    HibernateDelaySec = "30m";
   };
 }

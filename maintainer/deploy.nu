@@ -15,14 +15,20 @@ def main [] {
 
 def "main update" [
 	name: string # The moniker of the host configuration
+	ssh_target?: string # Optional SSH connection string
+	--debug # Enable nixos-rebuild debug output
 ] {
 	print "update"
 
-	let ssh_target = (input "What is the ssh connection string? ")
+	let ssh_target = if $ssh_target == null {
+		input "What is the ssh connection string? "
+	} else {
+		$ssh_target
+	}
 	let extra_args = [
-		["--debug", "--no-reexec", "--no-flake", "--elevate=sudo", "--ask-elevate-password"]
-
-	] | flatten
+		(if $debug { "--debug" } else { null }),
+		"--no-reexec", "--no-flake", "--elevate=sudo", "--ask-elevate-password",
+	] | compact --empty
 
 	with-env {} {
 		nixos-rebuild --file systems.nix --attr $name --target-host $ssh_target ...$extra_args switch
