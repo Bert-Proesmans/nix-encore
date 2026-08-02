@@ -352,6 +352,9 @@ in
       imports = [ noctalia.homeModule ];
       home.stateVersion = "26.05";
 
+      # TODO; Prepare audio pipeline preset to correct the dogshit audio coming from the laptop speakers.
+      services.easyeffects.enable = true;
+
       programs.alacritty = {
         enable = true;
         settings = {
@@ -363,9 +366,6 @@ in
             };
           };
         };
-      };
-      programs.fuzzel = {
-        enable = true;
       };
 
       wayland.windowManager.niri = {
