@@ -57,6 +57,20 @@ in
     MOZ_ENABLE_WAYLAND = "1";
   };
 
+  # Setup smartcard driver
+  services.pcscd.enable = true;
+  # Tell p11-kit to load/proxy opensc-pkcs11.so, providing all available slots
+  # (PIN1 for authentication/decryption, PIN2 for signing).
+  # SEEALSO; programs.firefox.SecurityDevices.Add.p11-kit-proxy
+  environment.etc."pkcs11/modules/opensc-pkcs11".text = ''
+    module: ${pkgs.opensc}/lib/opensc-pkcs11.so
+  '';
+  systemd.tmpfiles.rules = [
+    # beID extension hardcodes PKCS#11 library path.. bruuh
+    "L+ /usr/lib/x86_64-linux-gnu/libbeidpkcs11.so.0 - - - - ${pkgs.eid-mw}/lib/pkcs11/beidpkcs11.so"
+  ];
+  # TODO; Tools for signing box (beidconnect)
+
   security.rtkit.enable = true;
   services.pipewire = {
     # WARN; Requires rtkit configuration! (resolved above)
@@ -307,10 +321,11 @@ in
   programs.firefox = {
     # NOTE; Firefox is _wrapped_ with the policies, there is no global/local config, and a firefox on system PATH could become the wrong
     # firefox. As in, missing policies that are applied through home-manager.
-    #
-    # ERROR; Make sure that the home-manager wrapped version of firefox is found FIRST on PATH!
-    # Use 'config.programs.firefox.finalPackage' as starting point for wrapping.
+    # I'm only using system-wide firefox (at this moment).
     enable = true;
+
+    # Enables communication with smart-card driver
+    nativeMessagingHosts.packages = [ pkgs.web-eid-app ];
 
     languagePacks = [
       "en-GB"
@@ -323,7 +338,130 @@ in
       "privacy.resistFingerprinting" = true;
     };
 
-    policies = { };
+    policies = {
+      # Add support for PKCS#11 library redirection.
+      # SEEALSO; environment.etc."pkcs11/modules/opensc-pkcs11"
+      SecurityDevices.Add.p11-kit-proxy = "${pkgs.p11-kit}/lib/p11-kit-proxy.so";
+
+      # Updates & Background Services
+      AppAutoUpdate = false;
+      BackgroundAppUpdate = false;
+
+      # Feature Disabling
+      DisableBuiltinPDFViewer = true;
+      DisableFirefoxStudies = true;
+      DisableFirefoxAccounts = true;
+      DisableFirefoxScreenshots = true;
+      DisableForgetButton = true;
+      DisableMasterPasswordCreation = true;
+      PasswordManagerEnabled = false;
+      DisableProfileImport = true;
+      DisableProfileRefresh = true;
+      DisableSetDesktopBackground = true;
+      DisablePocket = true;
+      DisableTelemetry = true;
+      DisableFormHistory = true;
+      DisablePasswordReveal = true;
+      NoDefaultBookmarks = true;
+
+      # Access Restrictions
+      BlockAboutConfig = false;
+      BlockAboutProfiles = true;
+      BlockAboutSupport = true;
+
+      # UI and Behavior
+      DisplayMenuBar = "never";
+      DontCheckDefaultBrowser = true;
+      HardwareAcceleration = true;
+      OfferToSaveLogins = false;
+      # After upgrade, do not open (<empty url>) any additional tab with update news
+      OverridePostUpdatePage = "";
+
+      Extensions = {
+        # ERROR; All development continues in the ExtensionSettings node! Configure over there..
+      };
+
+      ExtensionSettings =
+        let
+          moz = short: "https://addons.mozilla.org/firefox/downloads/latest/${short}/latest.xpi";
+        in
+        {
+          # NOTE; Retrieve extension information from live Firefox install using URL
+          # about:support#addons
+          "*".installation_mode = "blocked";
+
+          "uBlock0@raymondhill.net" = {
+            install_url = moz "ublock-origin";
+            installation_mode = "force_installed";
+            updates_disabled = false;
+            private_browsing = true;
+            default_area = "navbar"; # Pin to taskbar
+          };
+
+          "{446900e4-71c2-419f-a6a7-df9c091e268b}" = {
+            install_url = moz "bitwarden-password-manager";
+            installation_mode = "normal_installed"; # Allow disable
+            updates_disabled = false;
+            private_browsing = true;
+            default_area = "navbar"; # Pin to taskbar
+          };
+
+          "treestyletab@piro.sakura.ne.jp" = {
+            # Tree Style Tab
+            install_url = moz "treestyletab@piro.sakura.ne.jp";
+            installation_mode = "force_installed";
+            updates_disabled = false;
+            private_browsing = true;
+            # default_area = "<omitted>"; # Hide extension
+          };
+
+          "gdpr@cavi.au.dk" = {
+            # Consent-o-matic
+            install_url = moz "gdpr@cavi.au.dk";
+            installation_mode = "normal_installed"; # Allow disable
+            updates_disabled = false;
+            private_browsing = true;
+            default_area = "menupanel";
+          };
+
+
+          # Extension not necessary when native bridge is directly installed instead!
+          # "belgiumeid@eid.belgium.be" = {
+          #   install_url = moz "belgium_eid";
+          #   installation_mode = "normal_installed"; # Allow disable
+          #   updates_disabled = false;
+          #   private_browsing = false;
+          #   # default_area = "<omitted>"; # Hide extension
+          # };
+        };
+
+      # Extension configuration
+      "3rdparty".Extensions = {
+        "uBlock0@raymondhill.net".adminSettings = {
+          userSettings = { };
+
+          selectedFilterLists = [
+            "user-filters"
+            "ublock-filters"
+            "ublock-badware"
+            "ublock-privacy"
+            "ublock-quick-fixes"
+            "ublock-unbreak"
+            "easylist"
+            "easyprivacy"
+            "urlhaus-1"
+            "plowe-0"
+            "fanboy-cookiemonster"
+            "ublock-cookies-easylist"
+          ];
+        };
+
+        "{446900e4-71c2-419f-a6a7-df9c091e268b}".environment = {
+          # Set default vault url for new sign-ins.
+          base = "https://bitwarden.eu";
+        };
+      };
+    };
   };
 
   # Basic system packages
@@ -337,6 +475,7 @@ in
 
     pkgs.nixfmt
     pkgs.vscodium
+    pkgs.eid-mw # eid-viewer
 
     pkgs.pciutils # lspci
     pkgs.usbutils # lsusb
@@ -1174,95 +1313,12 @@ in
 
       programs.nushell.enable = true;
 
+      home.file."${config.programs.firefox.configPath}/profiles.ini".force = true; # Testing
       programs.firefox = {
+        # ERROR; Home-manager settings are not added onto system-wide firefox settings. Firefox is wrapped with policies and preference files
+        # and this approach does _not_ compose!
+        # Using system-wide firefox (for now).
         enable = true;
-        package = osConfig.programs.firefox.finalPackage;
-
-        policies = {
-          # Updates & Background Services
-          AppAutoUpdate = false;
-          BackgroundAppUpdate = false;
-
-          # Feature Disabling
-          DisableBuiltinPDFViewer = true;
-          DisableFirefoxStudies = true;
-          DisableFirefoxAccounts = true;
-          DisableFirefoxScreenshots = true;
-          DisableForgetButton = true;
-          DisableMasterPasswordCreation = true;
-          DisableProfileImport = true;
-          DisableProfileRefresh = true;
-          DisableSetDesktopBackground = true;
-          DisablePocket = true;
-          DisableTelemetry = true;
-          DisableFormHistory = true;
-          DisablePasswordReveal = true;
-
-          # Access Restrictions
-          BlockAboutConfig = false;
-          BlockAboutProfiles = true;
-          BlockAboutSupport = true;
-
-          # UI and Behavior
-          DisplayMenuBar = "never";
-          DontCheckDefaultBrowser = true;
-          HardwareAcceleration = true;
-          OfferToSaveLogins = false;
-          DefaultDownloadDirectory = config.xdg.userDirs.download;
-
-          # Extensions
-          ExtensionSettings =
-            let
-              moz = short: "https://addons.mozilla.org/firefox/downloads/latest/${short}/latest.xpi";
-            in
-            {
-              "*".installation_mode = "blocked";
-
-              "uBlock0@raymondhill.net" = {
-                install_url = moz "ublock-origin";
-                installation_mode = "force_installed";
-                updates_disabled = false;
-                default_area = "menupanel";
-                private_browsing = true;
-              };
-
-              # TODO; Bitwarden
-              # TODO; Consent-o-matic
-              # TODO; Treestyle tabs
-              # TODO; BE-ID
-            };
-
-          # Extension configuration
-          "3rdparty".Extensions = {
-            "uBlock0@raymondhill.net".adminSettings = {
-              userSettings = {
-                # cloudStorageEnabled = mkForce false;
-
-                # importedLists = [
-                #   "https:#filters.adtidy.org/extension/ublock/filters/3.txt"
-                #   "https:#github.com/DandelionSprout/adfilt/raw/master/LegitimateURLShortener.txt"
-                # ];
-
-                # externalLists = lib.concatStringsSep "\n" importedLists;
-              };
-
-              selectedFilterLists = [
-                "user-filters"
-                "ublock-filters"
-                "ublock-badware"
-                "ublock-privacy"
-                "ublock-quick-fixes"
-                "ublock-unbreak"
-                "easylist"
-                "easyprivacy"
-                "urlhaus-1"
-                "plowe-0"
-                "fanboy-cookiemonster"
-                "ublock-cookies-easylist"
-              ];
-            };
-          };
-        };
 
         profiles.default.search = {
           force = true;
