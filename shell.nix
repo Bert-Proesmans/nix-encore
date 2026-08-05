@@ -19,6 +19,8 @@ pkgs.mkShellNoCC {
     # Adds command treefmt to PATH, for formatting the codebase files
     (treefmt-nix.mkWrapper pkgs ./maintainer/treefmt.nix)
     pkgs.lon # Source revision control
+    pkgs.nix-tree # Browse derivation output
+
     (writeNuApplication {
       name = "e2e-test";
       runtimeInputs = [

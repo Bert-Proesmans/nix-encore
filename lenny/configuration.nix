@@ -1,5 +1,6 @@
 {
   sources,
+  lib,
   pkgs,
   config,
   ...
@@ -55,6 +56,16 @@ in
     NIXOS_OZONE_WL = "1";
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
     MOZ_ENABLE_WAYLAND = "1";
+  };
+
+  xdg.portal = {
+    # enable = true; # Automatically enabled by compositor
+    extraPortals = [
+      # Integrate GUI apps with TUI filemanager 😏
+      pkgs.xdg-desktop-portal-termfilechooser
+    ];
+    # Compatibility mode for FHS-wrapped software
+    xdgOpenUsePortal = true;
   };
 
   # Setup smartcard driver
@@ -120,7 +131,7 @@ in
 
         # Command executed when no input is detected for a certain time
         # If null, no command will be executed
-        # inactivity_cmd = null; # TODO
+        # inactivity_cmd = null; # TODO; suspend eventually
 
         # Executes a command after a certain amount of seconds
         inactivity_delay = 30;
@@ -423,7 +434,6 @@ in
             private_browsing = true;
             default_area = "menupanel";
           };
-
 
           # Extension not necessary when native bridge is directly installed instead!
           # "belgiumeid@eid.belgium.be" = {
@@ -1252,19 +1262,21 @@ in
           idle = {
             # Use Noctalia builtin idle handling (instead of swayidle/other wayland tracker)
             behavior_order = [
-              "inform"
+              # "inform"
               "lock"
               "screen-off"
               "suspend"
             ];
             # NOTE; This triggers before _every_ configured behavior!
-            pre_action_fade_seconds = 0;
-            behavior.inform = {
-              enabled = true;
-              timeout = 285; # Seconds
-              action = "command";
-              command = "notify-send --app-name 'Idle watcher' --expire-time 15000 --transient 'Idle' 'Going idle in 15s'";
-            };
+            pre_action_fade_seconds = 7;
+
+            # No notifications, that gets annoying really quick
+            # behavior.inform = {
+            #   enabled = true;
+            #   timeout = 285; # Seconds
+            #   action = "command";
+            #   command = "notify-send --app-name 'Idle watcher' --expire-time 2000 --transient 'Idle' 'Going idle in 15s'";
+            # };
             behavior.lock = {
               enabled = true;
               timeout = 300; # Seconds
@@ -1311,6 +1323,80 @@ in
         };
       };
 
+      programs.yazi = {
+        # File manager
+        enable = true;
+        settings = {
+          mgr = {
+            show_hidden = true;
+          };
+          preview = {
+            max_width = 1000;
+            max_height = 1000;
+          };
+        };
+        initLua = ''
+          -- NOTE; Comments in lua scripts start with double hyphens
+
+          Status:children_add(function(self)
+            -- Add target of hovered symlink to status bar
+            local h = self._current.hovered
+            if h and h.link_to then
+              return " -> " .. tostring(h.link_to)
+            else
+              return ""
+            end
+          end, 3300, Status.LEFT)
+        '';
+        plugins."folder-rules" = {
+          # REF; https://yazi-rs.github.io/docs/tips#folder-rules
+          setup = true; # generates init-call
+          package = pkgs.writeTextFile {
+            name = "folder-rules-init.lua";
+            destination = "/main.lua";
+            text = ''
+              local function setup()
+                ps.sub("ind-sort", function(opt)
+                  local cwd = cx.active.current.cwd
+                  if cwd:ends_with("Downloads") then
+                    -- Sort files by descending modified time in the directory Downloads
+                    opt.by, opt.reverse, opt.dir_first = "mtime", true, false
+                  else
+                    -- Natural ~alphabetic
+                    opt.by, opt.reverse, opt.dir_first = "natural", false, true
+                  end
+                  return opt
+                end)
+              end
+
+              return { setup = setup }
+            '';
+          };
+        };
+        keymap = {
+          mgr.prepend_keymap = [
+            {
+              on = "T";
+              run = "plugin toggle-pane max-preview";
+              desc = "Maximize or restore the preview pane";
+            }
+            {
+              on = "<Esc>";
+              run = "close";
+              desc = "Cancel input";
+            }
+            {
+              on = [
+                "g"
+                "r"
+              ];
+              # Jump to repo root
+              run = "shell -- ya emit cd \"$(git rev-parse --show-toplevel)\"";
+            }
+          ];
+        };
+      };
+
       programs.nushell.enable = true;
 
       home.file."${config.programs.firefox.configPath}/profiles.ini".force = true; # Testing
@@ -1329,5 +1415,80 @@ in
           # engines = {};
         };
       };
+
+      programs.vscodium = {
+        enable = true;
+        # TODO; Lock down preferences
+        mutableExtensionsDir = true;
+      };
+
+      home.sessionVariables = {
+        EDITOR =
+          let
+            findCodium = pkgs.writeShellApplication {
+              name = "find-codium";
+              runtimeInputs = [ pkgs.nano ];
+              text = ''
+                if type "codium" > /dev/null; then
+                  # Since vsCodium works interactively there is an instant process fork.
+                  # The code calling $EDITOR is (very likely) synchronous, so we want to wait until
+                  # the specific (new) editor pane has closed!
+                  exec codium --wait "$@"
+                fi
+
+                exec nano "$@"
+              '';
+            };
+          in
+          lib.getExe findCodium;
+      };
+
+      xdg.mimeApps = {
+        enable = true;
+        defaultApplications =
+          let
+            browser = [ "firefox.desktop" ];
+            editor = [ "vscodium.desktop" ];
+            fileManager = [ "yazi.desktop" ];
+            extractor = [ "yazi.desktop" ];
+            imageViewer = [ "yazi.desktop" ]; # Experimental
+            videoViewer = [ "yazi.desktop" ]; # Experimental
+            pdfViewer = [ "firefox.desktop" ]; # Experimental
+          in
+          {
+            "text/html" = browser;
+            "text/xml" = browser;
+            "x-scheme-handler/http" = browser;
+            "x-scheme-handler/https" = browser;
+            "x-scheme-handler/unknown" = browser;
+
+            "text/*" = editor;
+            "text/plain" = editor;
+            "application/x-zerosize" = editor; # Empty files
+            "application/x-trash" = editor; # Backup files
+            "application/json" = editor;
+            "text/markdown" = editor;
+
+            "inode/directory" = fileManager;
+
+            "application/*zip" = extractor;
+            "application/gzip" = extractor;
+            "application/rar" = extractor;
+            "application/7z" = extractor;
+            "application/*tar" = extractor;
+
+            "image/*" = imageViewer;
+            "video/*" = videoViewer;
+
+            "application/pdf" = pdfViewer;
+            "application/epub" = pdfViewer;
+          };
+      };
+
+      xdg.terminal-exec = {
+        enable = true;
+        settings.default = [ "alacritty.desktop" ];
+      };
+
     };
 }

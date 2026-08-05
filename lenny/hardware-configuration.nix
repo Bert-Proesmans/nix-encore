@@ -1,6 +1,7 @@
 {
   modulesPath,
   sources,
+  lib,
   config,
   pkgs,
   ...
@@ -34,10 +35,27 @@
     };
   };
 
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.systemd-boot.editor = false;
-  # TODO; Is it necessary to edit EFI config while updating the system?
-  boot.loader.efi.canTouchEfiVariables = true;
+  # Hide the OS choice for bootloaders.
+  # It's still possible to open the bootloader list by pressing any key
+  # It will just not appear on screen unless a key is pressed
+  boot.loader.timeout = 0;
+  boot.loader.systemd-boot = {
+    enable = true;
+    editor = false;
+  };
+  boot.loader.efi.canTouchEfiVariables = false;
+
+  # NOTE; During the graphical boot process, it is possible to switch to text mode and back by pressing the escape key!
+  boot.plymouth = {
+    enable = true;
+    theme = "hexagon_dots_alt";
+    themePackages = [
+      (pkgs.adi1090x-plymouth-themes.override {
+        # By default we would install all themes
+        selected_themes = [ "hexagon_dots_alt" ];
+      })
+    ];
+  };
 
   boot.tmp = {
     useZram = true;
@@ -45,34 +63,34 @@
   };
 
   boot.initrd.systemd.enable = true;
+  boot.initrd.systemd.emergencyAccess = lib.mkForce false;
   boot.initrd.availableKernelModules = [
+    # NOTE; PCI / Thunderbolt could listen for keystrokes and/or intercept the LUKS session key during initrd.
     "xhci_pci"
     "thunderbolt"
     "nvme"
+    # NOTE; Not including any Intel Management Extension (IME) modules in initrd, this will cause errors thrown by the graphics driver
+    # because it has a dependency on IME for Digital Rights Management (DRM) functionality. eg
+    # i915 0000:00:02.0: [drm] *ERROR* GT1: GSC proxy component didn't bind within the expected timeout
   ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
   fileSystems = {
-    # /nix attrset is completed by disko.
     "/nix" = {
-      # Add option 'x-initrd.mount' to fstab, systemd should ignore managing this mount
-      # ERROR; It doesn't, see the dropin unit below !!
-      neededForBoot = true;
+      # NOTE; /nix attrset is completed by disko.
+
       # Disconnect the mount from fsck (systemd-fsck@%I.service).
-      # If a mount has a Requires= on another service, stopping that other service will propagate a stop
-      # to our mount as well! We don't want our /nix mount to be stopped!
+      # Systemd filesystem check service has a Requires= on 'nix.mount', stopping ~'fsck.service' will propagate the stop
+      # to 'nix.mount'through Requires relation. We don't want our /nix mount to be stopped!
+      #
+      # NOTE; systemd has hardcoded filters that prevent unmounting / (root) at shutdown, this should have
+      # also applied to '/nix'. (final unmount could/should happen inside shutdown initramfs)
       noCheck = true;
     };
   };
-  systemd.units."nix.mount" = {
-    overrideStrategy = "asDropin";
-    text = ''
-      [Unit]
-      DefaultDependencies = no
-    '';
-  };
+
   disko.devices = {
     disk.main = {
       type = "disk";
@@ -171,6 +189,8 @@
                 "nosuid"
                 "nodev"
                 "noatime"
+                # Make LUKS password entry timeout infinite
+                "x-systemd.device-timeout=0"
               ];
             };
           };
@@ -182,6 +202,8 @@
               mountpoint = "/";
               mountOptions = [
                 "defaults"
+                # Make LUKS password entry timeout infinite
+                "x-systemd.device-timeout=0"
               ];
             };
           };
@@ -226,7 +248,7 @@
   environment.systemPackages = [
     (pkgs.writeShellApplication {
       name = "admin-force-battery-discharge";
-      runtimeInputs = [];
+      runtimeInputs = [ ];
       text = ''
         # Forces the battery controller to discharge the battery
         # - even though charging threshold isn't met
