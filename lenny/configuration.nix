@@ -359,7 +359,7 @@ in
       BackgroundAppUpdate = false;
 
       # Feature Disabling
-      DisableBuiltinPDFViewer = true;
+      DisableBuiltinPDFViewer = false;
       DisableFirefoxStudies = true;
       DisableFirefoxAccounts = true;
       DisableFirefoxScreenshots = true;
@@ -378,7 +378,7 @@ in
       # Access Restrictions
       BlockAboutConfig = false;
       BlockAboutProfiles = true;
-      BlockAboutSupport = true;
+      BlockAboutSupport = false;
 
       # UI and Behavior
       DisplayMenuBar = "never";
@@ -1416,6 +1416,25 @@ in
         };
       };
 
+      programs.firefoxpwa = {
+        enable = true;
+        package = pkgs.firefoxpwa.overrideAttrs (prev: {
+          libs = "${osConfig.programs.firefox.finalPackage.libs}:${prev.libs}";
+        });
+        settings = { };
+        profiles = {
+          "01KZC87R992QZQ2PQ722GT1D3E".sites."01KZC8EVGKVGXMA8DXZMCWEVG4" = {
+            name = "Spotify Web";
+            url = "https://open.spotify.com/?utm_source=pwa_install";
+            manifestUrl = "https://open.spotifycdn.com/cdn/generated/manifest-web-player.1609946b.json";
+            desktopEntry.icon = pkgs.fetchurl {
+              url = "https://open.spotifycdn.com/cdn/images/icons/Spotify_256.17e41e58.png";
+              sha256 = "sha256-F+QeWKxx8miPFlPvQObZeXPbmPM3FDFjh+HQTHL4maY=";
+            };
+          };
+        };
+      };
+
       programs.vscodium = {
         enable = true;
         # TODO; Lock down preferences
@@ -1433,7 +1452,7 @@ in
                   # Since vsCodium works interactively there is an instant process fork.
                   # The code calling $EDITOR is (very likely) synchronous, so we want to wait until
                   # the specific (new) editor pane has closed!
-                  exec codium --wait "$@"
+                  exec codium --new-window --wait --skip-add-to-recently-opened "$@"
                 fi
 
                 exec nano "$@"
