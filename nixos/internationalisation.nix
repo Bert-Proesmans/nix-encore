@@ -2,6 +2,8 @@
   # Force be-latin keymap (= BE-AZERTY-ISO)
   services.xserver.xkb.layout = "be";
   services.xserver.xkb.variant = ""; # Explicitly empty!
+  # NOTE; Make CAPSLOCK behave like on Windows, print numbers instead of uppercased special characters.
+  services.xserver.xkb.options = "caps:digits_row";
   console.useXkbConfig = true;
 
   time.timeZone = lib.mkDefault "Etc/UTC";
