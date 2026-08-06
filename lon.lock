@@ -17,9 +17,9 @@
       "owner": "nix-community",
       "repo": "home-manager",
       "branch": "master",
-      "revision": "bf9ce9fec78f95f374e8dd3b503863a3ec128ebe",
-      "url": "https://github.com/nix-community/home-manager/archive/bf9ce9fec78f95f374e8dd3b503863a3ec128ebe.tar.gz",
-      "hash": "sha256-vkMnV0JIyw+g/NmcfoajlGaAO+9a0ezia+FZohQJrik="
+      "revision": "7834e82588860aaf780cec1366524456a70898d7",
+      "url": "https://github.com/nix-community/home-manager/archive/7834e82588860aaf780cec1366524456a70898d7.tar.gz",
+      "hash": "sha256-TIDlLTLI1/pB7IqgjzcKQjpODQsZE2oII4XGG9B6KjI="
     },
     "ly-themes": {
       "type": "Git",
@@ -58,9 +58,9 @@
       "owner": "nixos",
       "repo": "nixpkgs",
       "branch": "nixos-unstable",
-      "revision": "1559d3daa3ecc813a650b79375ea61b6741b8746",
-      "url": "https://github.com/nixos/nixpkgs/archive/1559d3daa3ecc813a650b79375ea61b6741b8746.tar.gz",
-      "hash": "sha256-LQy14TZp77TwbQf40gg1V3jo8FwJG0jGDkAH+zRHqg8="
+      "revision": "b7c2ada94fe99c15b0dbcf4d11fd7850b957a436",
+      "url": "https://github.com/nixos/nixpkgs/archive/b7c2ada94fe99c15b0dbcf4d11fd7850b957a436.tar.gz",
+      "hash": "sha256-IItrdb7Puk05RqOBWZYFC5X6Wl1sJmCfh5MWVHw5iMM="
     },
     "noctalia": {
       "type": "GitHub",
@@ -68,9 +68,9 @@
       "owner": "noctalia-dev",
       "repo": "noctalia",
       "branch": "main",
-      "revision": "73e498510e6f134b038a1c399bfe18e4e807102a",
-      "url": "https://github.com/noctalia-dev/noctalia/archive/73e498510e6f134b038a1c399bfe18e4e807102a.tar.gz",
-      "hash": "sha256-BembuDefgisohYMY/RGe1gi1Ldkr0CUjP1TMgLphUI4="
+      "revision": "d3135ed7a45c7d97b5ec254cf6fcfc26eaceebaa",
+      "url": "https://github.com/noctalia-dev/noctalia/archive/d3135ed7a45c7d97b5ec254cf6fcfc26eaceebaa.tar.gz",
+      "hash": "sha256-m5JAoOvQqxRqlJs1JoXtxqMkszqYixLfmYARtOsPWPA="
     },
     "treefmt-nix": {
       "type": "GitHub",
@@ -78,9 +78,9 @@
       "owner": "numtide",
       "repo": "treefmt-nix",
       "branch": "main",
-      "revision": "d1187f8bc71fb8aab02395869ec3f5c1920f75c0",
-      "url": "https://github.com/numtide/treefmt-nix/archive/d1187f8bc71fb8aab02395869ec3f5c1920f75c0.tar.gz",
-      "hash": "sha256-XE1lKgQ3eIO3E7zWryqcRsax+mYXod/5RHBn4YaR9YE="
+      "revision": "ae7910970dddc408fe6ab1c8e4b277bb21d72dc0",
+      "url": "https://github.com/numtide/treefmt-nix/archive/ae7910970dddc408fe6ab1c8e4b277bb21d72dc0.tar.gz",
+      "hash": "sha256-NLSyTCW4K4ofhNBllt3omPasm6QpralXH1DBZOc91Dw="
     }
   }
 }
