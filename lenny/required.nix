@@ -12,6 +12,7 @@
     ../nixos/home-manager.nix
     ../nixos/internationalisation.nix
     ../nixos/nix.nix
+    ../nixos/systemd-resolved.nix
   ];
 
   networking.hostName = "lenny";
