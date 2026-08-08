@@ -344,25 +344,19 @@ in
       "fr"
     ];
 
-    preferences = {
-      "browser.startup.homepage" = "https://wiki.proesmans.eu";
-      "privacy.resistFingerprinting" = true;
-    };
-
     policies = {
       # Add support for PKCS#11 library redirection.
       # SEEALSO; environment.etc."pkcs11/modules/opensc-pkcs11"
       SecurityDevices.Add.p11-kit-proxy = "${pkgs.p11-kit}/lib/p11-kit-proxy.so";
 
-      # Updates & Background Services
       AppAutoUpdate = false;
       BackgroundAppUpdate = false;
-
-      # Feature Disabling
-      DisableBuiltinPDFViewer = false;
+      DisableAppUpdate = true;
+      DisableBuiltinPDFViewer = true;
+      PDFjs.Enabled = false;
       DisableFirefoxStudies = true;
-      DisableFirefoxAccounts = true;
-      DisableFirefoxScreenshots = true;
+      DisableFirefoxAccounts = false; # Enable sync for settings/bookmarks
+      DisableFirefoxScreenshots = false;
       DisableForgetButton = true;
       DisableMasterPasswordCreation = true;
       PasswordManagerEnabled = false;
@@ -373,20 +367,133 @@ in
       DisableTelemetry = true;
       DisableFormHistory = true;
       DisablePasswordReveal = true;
+      AutofillAddressEnabled = false;
+      AutofillCreditCardEnabled = false;
       NoDefaultBookmarks = true;
+      UseSystemPrintDialog = true;
+      TranslateEnabled = false;
+      SSLVersionMin = "tls1.2";
+      IPProtectionAvailable = false;
+
+      DNSOverHTTPS = {
+        Enabled = true;
+        Locked = true;
+        ProviderURL = "https://security.cloudflare-dns.com/dns-query";
+        ExcludedDomains = [ ];
+        Fallback = true;
+      };
+
+      EnableTrackingProtection = {
+        Value = true;
+        Locked = true;
+        Cryptomining = true;
+        Fingerprinting = true;
+        EmailTracking = true;
+        SuspectedFingerprinting = true;
+        Category = "strict";
+        Exceptions = [ ];
+        BaselineExceptions = true;
+        ConvenienceExceptions = false;
+      };
+
+      SanitizeOnShutdown = {
+        Locked = false;
+        Cache = true;
+        OfflineApps = true;
+        Downloads = true;
+        SiteSettings = true;
+        Cookies = false;
+        FormData = true;
+        History = false;
+        Sessions = false;
+      };
+
+      EncryptedMediaExtensions = {
+        Enabled = true;
+        Locked = true;
+      };
+
+      PictureInPicture = {
+        Enabled = true;
+        Locked = true;
+      };
+
+      PopupBlocking = {
+        Default = true;
+        Locked = true;
+        # Allow = [ ];
+      };
 
       # Access Restrictions
-      BlockAboutConfig = false;
+      BlockAboutAddons = false;
+      BlockAboutConfig = false; # DEBUG
       BlockAboutProfiles = true;
-      BlockAboutSupport = false;
+      BlockAboutSupport = false; # DEBUG
+      CaptivePortal = true;
 
       # UI and Behavior
-      DisplayMenuBar = "never";
+      DisplayMenuBar = "default-off";
+      DisplayBookmarksToolbar = "always"; # always | never | newtab
       DontCheckDefaultBrowser = true;
       HardwareAcceleration = true;
       OfferToSaveLogins = false;
+      # On first run, do not open (<empty url>) any additional tabs
+      OverrideFirstRunPage = "";
       # After upgrade, do not open (<empty url>) any additional tab with update news
       OverridePostUpdatePage = "";
+      UserMessaging = {
+        # Prevent Firefox from messaging the user in certain situations.
+        Locked = true;
+        ExtensionRecommendations = false;
+        FeatureRecommendations = false;
+        UrlbarInterventions = false;
+        SkipOnboarding = true;
+        MoreFromMozilla = false;
+        FirefoxLabs = true;
+        WhatsNew = false;
+      };
+
+      FirefoxHome = {
+        Locked = true;
+        Search = false;
+        Weather = false;
+        TopSites = true;
+        SponsoredTopSites = false;
+        Highlights = false;
+        Pocket = false;
+        Stories = false;
+        SponsoredPocket = false;
+        SponsoredStories = false;
+        Snippets = false;
+      };
+
+      NewTabPage = true;
+      HomePage = {
+        Locked = false;
+        URL = "https://wiki.proesmans.eu";
+        StartPage = "homepage";
+        NewTabOnRestore = false;
+      };
+
+      FirefoxSuggest = {
+        Locked = true;
+        WebSuggestions = false;
+        SponsoredSuggestions = false;
+        ImproveSuggest = false;
+      };
+
+      Permissions = {
+        Notifications = {
+          Locked = true;
+          BlockNewRequests = true;
+          # Allow = [ ];
+        };
+        Autoplay = {
+          Locked = true;
+          Default = "block-audio-video"; # block-audio | block-audio-video | allow-audio-video
+          # Allow = [ ];
+        };
+      };
 
       Extensions = {
         # ERROR; All development continues in the ExtensionSettings node! Configure over there..
@@ -471,6 +578,49 @@ in
           base = "https://bitwarden.eu";
         };
       };
+
+      Handlers = {
+        mimeTypes = {
+          # "application/msword" = {
+          #   action = "useSystemDefault";
+          #   ask = false;
+          # };
+        };
+
+        schemes = {
+          # mailto = {
+          #   action = "useHelperApp";
+          #   ask = true;
+          #   handlers = [
+          #     {
+          #       name = "Gmail"; # Proton Mail
+          #       uriTemplate = "https://mail.google.com/mail/?extsrc=mailto&url=%s";
+          #     }
+          #   ];
+          # };
+        };
+
+        extensions = {
+          # pdf = {
+          #   action = "useHelperApp";
+          #   ask = true;
+          #   handlers = [
+          #     {
+          #       name = "GNOME Document Viewer";
+          #       path = "${pkgs.evince}/bin/evince";
+          #     }
+          #   ];
+          # };
+        };
+      };
+      AutoLaunchProtocolsFromOrigins = [
+        # {
+        #   protocol = "zoommtg";
+        #   allowed_origins = [
+        #     "https://somesite.zoom.us"
+        #   ];
+        # }
+      ];
     };
   };
 
@@ -1399,31 +1549,96 @@ in
 
       programs.nushell.enable = true;
 
+      xdg.dataFile."applications/mimeapps.list".force = true; # Testing
       home.file."${config.programs.firefox.configPath}/profiles.ini".force = true; # Testing
+
       programs.firefox = {
         # ERROR; Home-manager settings are not added onto system-wide firefox settings. Firefox is wrapped with policies and preference files
         # and this approach does _not_ compose!
         # Using system-wide firefox (for now).
         enable = true;
 
-        profiles.default.search = {
-          force = true;
-          default = "ddg";
-          privateDefault = "ddg";
+        profiles.default = {
+          containers = {
+            personal = {
+              id = 1;
+              color = "blue";
+              icon = "fingerprint";
+            };
+            admin = {
+              id = 2;
+              color = "purple";
+              icon = "briefcase";
+            };
+            gemini = {
+              id = 3;
+              color = "green";
+              icon = "chill";
+            };
+          };
 
-          # NOTE; I'm using bookmarks with shortcuts as search engine. Those sync between devices
-          # engines = {};
+          # userChrome = "";
+
+          settings = {
+            "browser.newtabpage.pinned" = [
+              {
+                title = "My website";
+                url = "https://bert.proesmans.eu/";
+              }
+              {
+                title = "Wiki | Proesmans.eu";
+                url = "https://wiki.proesmans.eu/";
+              }
+              {
+                title = "Github";
+                url = "https://github.com/";
+              }
+              {
+                title = "Tweakers";
+                url = "https://tweakers.net/";
+              }
+              {
+                title = "Reddit";
+                url = "https://www.reddit.com/";
+              }
+              {
+                title = "Youtube";
+                url = "https://youtube.com";
+              }
+            ];
+            # Display more information on Insecure Connection warning pages
+            # Test: https://badssl.com
+            "browser.xul.error_pages.expert_bad_cert" = true;
+          };
+
+          search = {
+            force = true;
+            default = "ddg";
+            privateDefault = "ddg";
+
+            # Option not available
+            # Remove = [
+            #   "eBay"
+            #   "Bing"
+            #   "Ecosia"
+            #   "Wikipedia"
+            #   "Perplexity"
+            # ];
+
+            # NOTE; I'm using bookmarks with shortcuts as search engine. Those sync between devices
+            # engines = {};
+          };
         };
       };
 
       programs.firefoxpwa = {
         enable = true;
-        package = pkgs.firefoxpwa.overrideAttrs (prev: {
-          libs = "${osConfig.programs.firefox.finalPackage.libs}:${prev.libs}";
-        });
         settings = { };
         profiles = {
           "01KZC87R992QZQ2PQ722GT1D3E".sites."01KZC8EVGKVGXMA8DXZMCWEVG4" = {
+            # WARN; YOU MUST LOGIN WITH PASSWORD
+            # otherwise using the e-mail code login will give you a cookie with lifetime for the _current session_ only!
+            # and you'll have to login again after reopening the browser!
             name = "Spotify Web";
             url = "https://open.spotify.com/?utm_source=pwa_install";
             manifestUrl = "https://open.spotifycdn.com/cdn/generated/manifest-web-player.1609946b.json";
@@ -1434,6 +1649,9 @@ in
           };
         };
       };
+
+      # PDF reader
+      programs.zathura.enable = true;
 
       programs.vscodium = {
         enable = true;

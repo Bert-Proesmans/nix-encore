@@ -9,6 +9,7 @@
   imports = [
     (sources.disko + "/module.nix")
     ./hardware-configuration.nix
+    ./workarounds.nix
     ../nixos/home-manager.nix
     ../nixos/internationalisation.nix
     ../nixos/nix.nix

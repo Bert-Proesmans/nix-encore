@@ -77,20 +77,6 @@
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
-  fileSystems = {
-    "/nix" = {
-      # NOTE; /nix attrset is completed by disko.
-
-      # Disconnect the mount from fsck (systemd-fsck@%I.service).
-      # Systemd filesystem check service has a Requires= on 'nix.mount', stopping ~'fsck.service' will propagate the stop
-      # to 'nix.mount'through Requires relation. We don't want our /nix mount to be stopped!
-      #
-      # NOTE; systemd has hardcoded filters that prevent unmounting / (root) at shutdown, this should have
-      # also applied to '/nix'. (final unmount could/should happen inside shutdown initramfs)
-      noCheck = true;
-    };
-  };
-
   disko.devices = {
     disk.main = {
       type = "disk";
@@ -125,8 +111,8 @@
                 "--type luks2"
                 "--hash sha256"
                 "--pbkdf argon2i"
-                # PBKDF is benchmarked towards iter-time and memory usage. The defaults are increased!
-                "--iter-time 10000" # 10 seconds
+                # PBKDF is benchmarked towards iter-time and memory usage.
+                "--iter-time 40000" # 4 seconds
                 "--pbkdf-memory 4194304" # 4 gigabyte (iter-time has priority, this value is automatically lowered)
                 # Best performance according to cryptsetup benchmark
                 "--cipher aes-xts-plain64" # [cipher]-[mode]-[iv] format
@@ -210,14 +196,6 @@
         };
       };
     };
-  };
-
-  services.dbus = {
-    brokerPackage = pkgs.dbus-broker.overrideAttrs (old: {
-      patches = (old.patches or [ ]) ++ [
-        ./dbus-duplicate-service-log-extender.patch
-      ];
-    });
   };
 
   services.fstrim.enable = true;
