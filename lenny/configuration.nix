@@ -471,7 +471,7 @@ in
       HomePage = {
         Locked = false;
         URL = "https://wiki.proesmans.eu";
-        StartPage = "homepage";
+        StartPage = "homepage-locked";
         NewTabOnRestore = false;
       };
 
@@ -540,6 +540,14 @@ in
             updates_disabled = false;
             private_browsing = true;
             default_area = "menupanel";
+          };
+
+          "extension@one-tab.com" = {
+            install_url = moz "extension@one-tab.com";
+            installation_mode = "normal_installed"; # Allow disable
+            updates_disabled = false;
+            private_browsing = false;
+            default_area = "navbar";
           };
 
           # Extension not necessary when native bridge is directly installed instead!
@@ -718,7 +726,7 @@ in
           # https://niri-wm.github.io/niri/Configuration:-Layout
           layout = {
             # Set gaps around windows in logical pixels.
-            gaps = 4;
+            gaps = 2;
 
             # When to center a column when changing focus, options are:
             # - "never", default behavior, focusing an off-screen column will keep at the left
@@ -767,7 +775,7 @@ in
               # off = {};
 
               # How many logical pixels the ring extends out from the windows.
-              width = 4;
+              width = 2;
 
               # Colors can be set in a variety of ways:
               # - CSS named colors: "red"
@@ -805,7 +813,7 @@ in
               # If you enable the border, you probably want to disable the focus ring.
               off = { };
 
-              width = 4;
+              width = 2;
               active-color = "#ffc87f";
               inactive-color = "#505050";
 
@@ -855,7 +863,7 @@ in
               # Example: enable rounded corners for all windows.
               # (This example rule is commented out with a "/-" in front.)
               window-rule._children = [
-                { geometry-corner-radius = 20; }
+                { geometry-corner-radius = 10; }
                 { clip-to-geometry = true; }
               ];
             }
@@ -887,6 +895,10 @@ in
                 }
                 { open-floating = true; }
               ];
+
+              # ERROR; Cannot make (all) extension windows floating because they set their title late in the window
+              # construction process. By that time the window-rules have already executed. eg Bitwarden extension.
+              # REF; https://github.com/niri-wm/niri/discussions/1599
             }
             {
               # Example: block out two password managers from screen capture.
@@ -1343,6 +1355,23 @@ in
             ];
           };
 
+          wallpaper = {
+            enabled = true;
+            directory = "~/Pictures/Wallpapers";
+            directory_light = "~/Pictures/Wallpapers";
+            directory_dark = "~/Pictures/Wallpapers";
+            per_monitor_directories = false;
+            automation.enabled = false;
+            transition = [
+              "fade"
+              "disc"
+              "stripes"
+              "zoom"
+              "honeycomb"
+            ];
+            transition_on_startup = false; # animate the first wallpaper at shell startup
+          };
+
           dock = {
             enabled = true;
             active_monitor_only = true;
@@ -1559,6 +1588,7 @@ in
         enable = true;
 
         profiles.default = {
+          containersForce = true;
           containers = {
             personal = {
               id = 1;
@@ -1606,9 +1636,18 @@ in
                 url = "https://youtube.com";
               }
             ];
+            "media.videocontrols.picture-in-picture.video-toggle.has-used" = true;
+            "media.videocontrols.picture-in-picture.video-toggle.enabled" = false; # disable pip popup
+            "browser.startup.page" = 1; # Open homepage on startup (no restore session [=3])
+            # Disable Firefox view
+            "browser.tabs.firefox-view" = false;
+            "browser.tabs.firefox-view-next" = false;
+            "browser.tabs.firefox-view-newIcon" = false;
+            "browser.firefox-view.feature-tour" = ''"{\"screen\":\"\",\"complete\":true}"'';
             # Display more information on Insecure Connection warning pages
             # Test: https://badssl.com
             "browser.xul.error_pages.expert_bad_cert" = true;
+            "browser.settings-redesign.promo.dismissed" = true;
           };
 
           search = {
@@ -1646,6 +1685,12 @@ in
               url = "https://open.spotifycdn.com/cdn/images/icons/Spotify_256.17e41e58.png";
               sha256 = "sha256-F+QeWKxx8miPFlPvQObZeXPbmPM3FDFjh+HQTHL4maY=";
             };
+          };
+          "01KZH4WVMENHAFSJQFXJ5MY5GJ".sites."01KZH4XTS769QY6275KSYS516P" = {
+            name = "Discord";
+            url = "https://discord.com/channels/@me";
+            manifestUrl = "file://${./discord.manifest.json}";
+            desktopEntry.icon = ./discord-icon.png;
           };
         };
       };
@@ -1726,6 +1771,31 @@ in
         enable = true;
         settings.default = [ "alacritty.desktop" ];
       };
+
+      home.file."${config.xdg.userDirs.pictures}/Wallpapers/noctalia.png".source =
+        "${config.programs.noctalia.package}/share/noctalia/assets/noctalia-wallpaper.png";
+      home.file."${config.xdg.userDirs.pictures}/Wallpapers/nix-wallpaper-binary-black.png".source =
+        pkgs.fetchurl
+          {
+            url = "https://raw.githubusercontent.com/NixOS/nixos-artwork/8957e93c95867faafec7f9988cedddd6837859fa/wallpapers/nix-wallpaper-binary-black.png";
+            hash = "sha256-mhSh0wz2ntH/kri3PF5ZrFykjjdQLhmlIlDDGFQIYWw=";
+          };
+      home.file."${config.xdg.userDirs.pictures}/Wallpapers/firefox-snow.png".source = pkgs.fetchurl {
+        url = "https://raw.githubusercontent.com/Bert-Proesmans/resources/refs/heads/main/images/dfd3762e-f77d-4b6e-ac75-32eb2549ef40.png";
+        hash = "sha256-Fyx6hOc0RbCo1i9jBDxwSWlfQznZyYMxCK75+aka3lE=";
+      };
+      home.file."${config.xdg.userDirs.pictures}/Wallpapers/numbat-ccby-azskalt.webp".source =
+        pkgs.fetchurl
+          {
+            url = "https://raw.githubusercontent.com/Bert-Proesmans/resources/refs/heads/main/images/numbat-ccby-azskalt.webp";
+            hash = "sha256-ysqdLIF/u/Q98N6g47sCM2ne4uEyU25uBd6ldh/pM+o=";
+          };
+      home.file."${config.xdg.userDirs.pictures}/Wallpapers/john-towner-JgOeRuGD_Y4-unsplash.jpg".source =
+        pkgs.fetchurl
+          {
+            url = "https://raw.githubusercontent.com/Bert-Proesmans/resources/refs/heads/main/images/john-towner-JgOeRuGD_Y4-unsplash.jpg";
+            hash = "sha256-3z6+ia3NNPCB0RZcUCzHXRp+OProMFepi5k8/46oDIE=";
+          };
 
     };
 }

@@ -1,0 +1,11 @@
+{
+  "name": "Discord",
+  "description": "Discord",
+  "icons": [],
+  "start_url": "https://discord.com/channels/@me",
+  "scope": "https://discord.com",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay"],
+  "background_color": "#36393f",
+  "theme_color": "#202225"
+}
