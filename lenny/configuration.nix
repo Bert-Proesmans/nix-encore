@@ -1576,6 +1576,12 @@ in
         };
       };
 
+      # Let home-manager manage bash profile!
+      # WARN; This is required to get the full functionality defined in home-manager modules.
+      programs.bash.enable = true;
+      # .. ERROR; Nushell does _not_ source the .profile/environment files! You won't have all the expected variables available after launching
+      # TODO; Integrate .profile/environment somehow (note that those files contain shell code that nushell cannot understand)
+      # => Could 'just' launch nushell from bash as easy way out..
       programs.nushell.enable = true;
 
       xdg.dataFile."applications/mimeapps.list".force = true; # Testing
@@ -1612,7 +1618,7 @@ in
           settings = {
             "browser.newtabpage.pinned" = [
               {
-                title = "My website";
+                title = "Bert Proesmans";
                 url = "https://bert.proesmans.eu/";
               }
               {
@@ -1633,7 +1639,7 @@ in
               }
               {
                 title = "Youtube";
-                url = "https://youtube.com";
+                url = "https://www.youtube.com/feed/subscriptions";
               }
             ];
             "media.videocontrols.picture-in-picture.video-toggle.has-used" = true;
@@ -1711,13 +1717,16 @@ in
               name = "find-codium";
               runtimeInputs = [ pkgs.nano ];
               text = ''
-                if type "codium" > /dev/null; then
+                if [ -n "$WAYLAND_DISPLAY" ] || [ "$XDG_SESSION_TYPE" = "wayland" ]; then
+                  # Running inside Wayland session
+
                   # Since vsCodium works interactively there is an instant process fork.
                   # The code calling $EDITOR is (very likely) synchronous, so we want to wait until
                   # the specific (new) editor pane has closed!
                   exec codium --new-window --wait --skip-add-to-recently-opened "$@"
                 fi
 
+                # Outside of Wayland session
                 exec nano "$@"
               '';
             };
