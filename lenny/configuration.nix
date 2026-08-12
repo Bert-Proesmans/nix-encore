@@ -1365,7 +1365,6 @@ in
             transition = [
               "fade"
               "disc"
-              "stripes"
               "zoom"
               "honeycomb"
             ];
@@ -1639,7 +1638,11 @@ in
               }
               {
                 title = "Youtube";
-                url = "https://www.youtube.com/feed/subscriptions";
+                url = "https://www.youtube.com/feed/subscriptions/";
+              }
+              {
+                title = "Hacker News";
+                url = "https://news.ycombinator.com/";
               }
             ];
             "media.videocontrols.picture-in-picture.video-toggle.has-used" = true;
