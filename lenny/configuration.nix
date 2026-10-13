@@ -80,7 +80,6 @@ in
     # beID extension hardcodes PKCS#11 library path.. bruuh
     "L+ /usr/lib/x86_64-linux-gnu/libbeidpkcs11.so.0 - - - - ${pkgs.eid-mw}/lib/pkcs11/beidpkcs11.so"
   ];
-  # TODO; Tools for signing box (beidconnect)
 
   security.rtkit.enable = true;
   services.pipewire = {
@@ -336,7 +335,15 @@ in
     enable = true;
 
     # Enables communication with smart-card driver
-    nativeMessagingHosts.packages = [ pkgs.web-eid-app ];
+    nativeMessagingHosts.packages = [
+      # Standard beID install acts as a smartcard provider, includes CSAM portal access and works natively out-of-the box.
+      #
+      # web-eid is optional to support ID cards of other countries (https://www.id.ee/en/)
+      # pkgs.web-eid-app
+      #
+      # Fedict BeIDConnect is a non-native requirement for BOSA Sign.
+      pkgs.beidconnect
+    ];
 
     languagePacks = [
       "en-GB"
@@ -558,6 +565,14 @@ in
           #   private_browsing = false;
           #   # default_area = "<omitted>"; # Hide extension
           # };
+
+          "beidconnect@bosa.be" = {
+            install_url = moz "beidconnect";
+            installation_mode = "normal_installed"; # Allow disable
+            updates_disabled = false;
+            private_browsing = false;
+            # default_area = "<omitted>"; # Hide extension
+          };
         };
 
       # Extension configuration
@@ -1586,11 +1601,22 @@ in
       xdg.dataFile."applications/mimeapps.list".force = true; # Testing
       home.file."${config.programs.firefox.configPath}/profiles.ini".force = true; # Testing
 
+
       programs.firefox = {
         # ERROR; Home-manager settings are not added onto system-wide firefox settings. Firefox is wrapped with policies and preference files
         # and this approach does _not_ compose!
         # Using system-wide firefox (for now).
         enable = true;
+
+        # WORKAROUND
+        # Using "home-manager.programs.firefox" options puts a firefox on path that does _not_ check <firefox-from-system>/lib/mozilla/native-messaging-hosts
+        # for native extension information. All firefox versions _do_ check the home-directory though!
+        # REF; https://github.com/NixOS/nixpkgs/issues/281710
+        #
+        # EQUIVALENT TO
+        # home.file.".mozilla/native-messaging-hosts/be.bosa.beidconnect.json".source =
+        #   "${pkgs.beidconnect}/lib/mozilla/native-messaging-hosts/be.bosa.beidconnect.json";
+        nativeMessagingHosts = osConfig.programs.firefox.nativeMessagingHosts.packages;
 
         profiles.default = {
           containersForce = true;
