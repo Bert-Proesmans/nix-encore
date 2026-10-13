@@ -61,6 +61,11 @@ in
   xdg.portal = {
     # enable = true; # Automatically enabled by compositor
     extraPortals = [
+      # Basic desktop functionality
+      pkgs.xdg-desktop-portal-gtk
+
+      # xdg-desktop-portal-gnome # is set by niri compositor
+
       # Integrate GUI apps with TUI filemanager 😏
       pkgs.xdg-desktop-portal-termfilechooser
     ];
