@@ -10,6 +10,7 @@ let
 in
 {
   imports = [ ./required.nix ];
+  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "corefonts" ];
 
   # Forward port 2222 on the host to port 22 on the VM
   virtualisation.vmVariant = {
@@ -48,6 +49,9 @@ in
       # For design software
       montserrat
       open-sans
+
+      # Windows emulation
+      corefonts
     ];
   };
 
@@ -664,6 +668,15 @@ in
     pkgs.nixfmt
     pkgs.vscodium
     pkgs.eid-mw # eid-viewer
+    pkgs.kdePackages.okular # PDF view/sign
+    pkgs.pdfchain # PDF manipulations
+
+    pkgs.libreoffice
+    # Spelling and hyphenation dictionaries for libreoffice
+    pkgs.hunspellDicts.nl_NL
+    pkgs.hyphenDicts.nl_BE
+    pkgs.hunspellDicts.en_GB-ise
+    pkgs.hyphenDicts.en_GB
 
     pkgs.pciutils # lspci
     pkgs.usbutils # lsusb
@@ -1349,7 +1362,7 @@ in
         # WARN; NOT using nixpkgs upstream package will cause the buildhost to compile Noctalia!
         package = pkgs.noctalia;
         systemd.enable = true;
-        validateConfig = true;
+        checkConfig = true;
         settings = {
           shell = {
             font_family = "Montserrat SemiBold";
@@ -1605,7 +1618,6 @@ in
 
       xdg.dataFile."applications/mimeapps.list".force = true; # Testing
       home.file."${config.programs.firefox.configPath}/profiles.ini".force = true; # Testing
-
 
       programs.firefox = {
         # ERROR; Home-manager settings are not added onto system-wide firefox settings. Firefox is wrapped with policies and preference files
