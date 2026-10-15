@@ -90,6 +90,88 @@ in
     "L+ /usr/lib/x86_64-linux-gnu/libbeidpkcs11.so.0 - - - - ${pkgs.eid-mw}/lib/pkcs11/beidpkcs11.so"
   ];
 
+  # Okular PDF signing; Poppler/NSS must find the eID PKCS#11 module and trusted Belgium root CA.
+  #
+  # WARN; "okular-generator-popplerrc" is a hardcoded string in the Okular source, NOT something configurable
+  # (<kcfgfile name="okular-generator-popplerrc"/>). The file path (<config dir>/okular-generator-popplerrc)
+  # and the group/key names below are therefore static as well. Re-check this file name and the keys when updating Okular.
+  #
+  # NOTE; Placed in the system-wide KConfig search path (XDG_CONFIG_DIRS) so the user can still override in the Okular settings
+  # and no file in $HOME gets clobbered.
+  environment.etc."xdg/okular-generator-popplerrc".text =
+    let
+      # Belgium Root CA certificates, authoritative source is https://repository.eid.belgium.be/ (links to https://certs.eid.belgium.be/).
+      # The (current) citizen CA and signature certificates chain up to either of these roots, depending on the issuance date of the card.
+      belgiumRootCA3 = pkgs.fetchurl {
+        # expires in January 2028
+        url = "https://certs.eid.belgium.be/belgiumrca3.crt";
+        hash = "sha256-qNFOlF4+UVa8rl45c3z2obH1ECi7v5gvUM5fTAVWi00=";
+      };
+      belgiumRootCA4 = pkgs.fetchurl {
+        # expires in October 2032
+        url = "https://certs.eid.belgium.be/belgiumrca4.crt";
+        hash = "sha256-cC3VwaCTzwqdcfrdm/mnxYV9iftztxboZyKLPCvrlo8=";
+      };
+      # Root CA6 is NOT published on certs.eid.belgium.be (that repository is stale and ends at CA4). It is taken from the Belgian eIDAS Trusted
+      # List (https://tsl.belgium.be/tsl-be.xml, service "Belgium Root CA6 QCert for ESig"), so it is inlined here.
+      # expires in June 2040
+      # SHA-256 fingerprint; 9C:87:2B:C9:79:A7:C0:9A:58:D4:A2:74:C1:99:E5:CB:16:CF:A9:B9:61:8D:98:BC:9A:99:88:E9:84:B8:49:5C
+      belgiumRootCA6 = pkgs.writeText "belgium-root-ca6.pem" ''
+        -----BEGIN CERTIFICATE-----
+        MIIDaDCCAu2gAwIBAgIUcYtX/2tpPlocI17Yh6PvUfQBDyYwCgYIKoZIzj0EAwMw
+        geAxCzAJBgNVBAYTAkJFMREwDwYDVQQHDAhCcnVzc2VsczEwMC4GA1UECgwnS2lu
+        Z2RvbSBvZiBCZWxnaXVtIC0gRmVkZXJhbCBHb3Zlcm5tZW50MTYwNAYDVQQLDC1G
+        UFMgSG9tZSBBZmZhaXJzIC0gQklLLUdDSSAoTlRSQkUtMDM2MjQ3NTUzOCkxOTA3
+        BgNVBAsMMEZQUyBQb2xpY3kgYW5kIFN1cHBvcnQgLSBCT1NBIChOVFJCRS0wNjcx
+        NTE2NjQ3KTEZMBcGA1UEAwwQQmVsZ2l1bSBSb290IENBNjAeFw0yMDA2MDMxMDAx
+        MzFaFw00MDA2MDMxMDAxMzFaMIHgMQswCQYDVQQGEwJCRTERMA8GA1UEBwwIQnJ1
+        c3NlbHMxMDAuBgNVBAoMJ0tpbmdkb20gb2YgQmVsZ2l1bSAtIEZlZGVyYWwgR292
+        ZXJubWVudDE2MDQGA1UECwwtRlBTIEhvbWUgQWZmYWlycyAtIEJJSy1HQ0kgKE5U
+        UkJFLTAzNjI0NzU1MzgpMTkwNwYDVQQLDDBGUFMgUG9saWN5IGFuZCBTdXBwb3J0
+        IC0gQk9TQSAoTlRSQkUtMDY3MTUxNjY0NykxGTAXBgNVBAMMEEJlbGdpdW0gUm9v
+        dCBDQTYwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAR532ARaLVsPSf5Pz9+b5ExaxpC
+        e8iGGkDgkbUlGM0ulbr0YqbKva7EoOAY+YL5ZJs8S0KIsuQNc0f2vgI8xcyPQHge
+        CaLcw0OzvmfCHf/OMOIozEKgKaAK6pHvaBXP0tijZjBkMBIGA1UdEwEB/wQIMAYB
+        Af8CAQEwHwYDVR0jBBgwFoAULqCIsAsNYonsHT/Un8ySRI5IaUYwHQYDVR0OBBYE
+        FC6giLALDWKJ7B0/1J/MkkSOSGlGMA4GA1UdDwEB/wQEAwIBBjAKBggqhkjOPQQD
+        AwNpADBmAjEAt2e2vVG4/aMjIokbQQuCnvI8so8rZl/IbKupMCJitfFi7oVlHllY
+        FDdYMDTKWLZgAjEAsa2wuz3Ew6/68XXtIT+51snqkl2KLlaVgKXYlpTh2zqQBIBd
+        KO1nMO/rQRfuZ701
+        -----END CERTIFICATE-----
+      '';
+
+      # Read-only NSS database, to be used by Okular (through Poppler) to find signing certificates and to validate signatures.
+      # Equivalent to the manual steps from https://www.stroobant.be/signing-emails-and-pdfs-with-belgian-eid-on-linux
+      #   - Security Devices > Load; Belgian eID PKCS#11 module
+      #   - Manage Certificates > Import; Belgium root CA, trusted for authentication ONLY (no TLS/code signing).
+      #
+      # WARN; The database has no password and should never be written to by NSS (read-only open).
+      eid-nssdb =
+        pkgs.runCommand "eid-nssdb"
+          {
+            nativeBuildInputs = [ pkgs.nss.tools ];
+          }
+          ''
+            mkdir "$out"
+            # certutil only has short flags for these operations, no long equivalents exist (see `certutil --help`).
+            #   -N create new database      -d database directory    --empty-password no password on the database
+            #   -A add certificate          -n certificate nickname  -t trust flags (SSL,S/MIME,code signing)
+            #   -i input certificate file (DER or PEM)
+            certutil -N -d "sql:$out" --empty-password
+            modutil -dbdir "sql:$out" -force -add "Belgium eID" -libfile "${pkgs.eid-mw}/lib/pkcs11/beidpkcs11.so"
+            certutil -A -d "sql:$out" -n "Belgium Root CA3" -t ",C," -i ${belgiumRootCA3}
+            certutil -A -d "sql:$out" -n "Belgium Root CA4" -t ",C," -i ${belgiumRootCA4}
+            # No trace of Belgium Root CA5
+            certutil -A -d "sql:$out" -n "Belgium Root CA6" -t ",C," -i ${belgiumRootCA6}
+          '';
+    in
+    ''
+      [Signatures]
+      SignatureBackend=NSS
+      UseDefaultCertDB=false
+      DBCertificatePath=file://${eid-nssdb}
+    '';
+
   security.rtkit.enable = true;
   services.pipewire = {
     # WARN; Requires rtkit configuration! (resolved above)
